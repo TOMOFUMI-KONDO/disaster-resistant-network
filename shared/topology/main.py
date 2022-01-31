@@ -11,11 +11,11 @@ from mininet.topo import Topo
 """
 Topology is like below.
 
-         --- s2 ---
-        |          |
-h1 --- s1          s4 --- h2
-        |          |
-         --- s3 ---
+h1 --- s1 --- s2 --- s3
+       |      |      |
+       s4 --- s5 --- s6
+       |      |      |
+       s7 --- s8 --- s9 --- h2
 """
 
 
