@@ -72,19 +72,19 @@ class RouterTest(unittest.TestCase):
 
         router = Router(nodes, links, Node("n13"), Node("n4"))
         self.assertListEqual(router.calc_shortest_path().links, [
-            Link("l22", "n9", "n13", 1),
-            Link("l14", "n6", "n9", 2),
-            Link("l7", "n3", "n6", 2),
-            Link("l6", "n3", "n4", 1),
+            links[21],
+            links[13],
+            links[6],
+            links[5],
         ])
 
         router.set_dst(Node("n16"))
         self.assertListEqual(router.calc_shortest_path().links, [
-            Link("l22", "n9", "n13", 1),
-            Link("l23", "n9", "n14", 1),
-            Link("l27", "n11", "n14", 1),
-            Link("l26", "n11", "n12", 1),
-            Link("l30", "n12", "n16", 2),
+            links[21],
+            links[22],
+            links[26],
+            links[25],
+            links[29],
         ])
 
 
