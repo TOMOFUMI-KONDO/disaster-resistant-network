@@ -1,6 +1,6 @@
 import unittest
 
-from shared.topology.router import Router, Node, Link
+from shared.controller.router import Router, Node, Link
 
 
 class RouterTest(unittest.TestCase):

@@ -1,12 +1,38 @@
 from __future__ import annotations
 
+from mininet.topo import Topo
+
 
 class Router(object):
     INF = 10 ** 10
 
-    def __init__(self, nodes: list[Node], links: list[Link], src: Node, dst: Node):
-        self.__nodes = nodes
-        self.__links = links
+    @classmethod
+    def from_mininet_topo(cls, topo: Topo, src: str, dst: str):
+        nodes = []
+        for s in topo.switches():
+            nodes.append(Node(s))
+        for n in topo.hosts():
+            nodes.append(Node(n))
+
+        topo_links = topo.links()
+        links = []
+        for i in range(len(topo_links)):
+            link = topo_links[i]
+            links.append(Link(f"l{i + 1}", link[0], link[1], None))  # TODO: set cost from link info
+
+        return Router(nodes, links, Node(src), Node(dst))
+
+    def __init__(self, nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
+        if nodes is None:
+            self.__nodes = []
+        else:
+            self.__nodes = nodes
+
+        if links is None:
+            self.__links = []
+        else:
+            self.__links = links
+
         self.__src = src
         self.__dst = dst
 
