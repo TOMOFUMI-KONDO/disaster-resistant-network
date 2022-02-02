@@ -10,9 +10,8 @@ class Router(object):
         self.src = src
         self.dst = dst
 
-    # TODO: test this method
     # calculate the shortest path from src to dst by dijkstra
-    def calc(self) -> Path:
+    def calc_shortest_path(self) -> Path:
         link_to_node: dict[Node, Link] = {}
         fixed_nodes = [self.src]
         costs = {self.src: 0}
@@ -41,7 +40,7 @@ class Router(object):
         path = Path()
         node = self.dst
         while node != self.src:
-            path.append(link_to_node[node])
+            path.push(link_to_node[node])
 
             # find opposite node
             if node != link_to_node[node].node1:
@@ -92,3 +91,6 @@ class Path(object):
 
     def append(self, link: Link):
         self.links.append(link)
+
+    def push(self, link: Link):
+        self.links.insert(0, link)
