@@ -92,6 +92,12 @@ class Link(object):
         cls = type(self)
         return f"{self.name} {self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __ne__(self, other):
+        return not self == other
+
 
 class Path(object):
     def __init__(self, links: list[Link] = None):
