@@ -34,26 +34,20 @@ class Router(object):
                     link_to_node[neighbor] = link_to_neighbor
 
             cost_of_not_fixed_nodes = dict(filter(lambda x: x[0] not in fixed_nodes, costs.items()))
-            next_fixed_node = min(cost_of_not_fixed_nodes.items(), key=lambda x: x[1])
+            next_fixed_node = min(cost_of_not_fixed_nodes.items(), key=lambda x: x[1])[0]
             fixed_nodes.append(next_fixed_node)
 
         path = Path()
         node = self.dst
         while node != self.src:
             path.push(link_to_node[node])
-
-            # find opposite node
-            if node != link_to_node[node].node1:
-                node = self.__find_node(link_to_node[node].node1)
-            else:
-                node = self.__find_node(link_to_node[node].node2)
+            node = self.__find_opposite_node(link_to_node[node], node)
 
         return path
 
     def __neighbors(self, node: Node) -> list[Node]:
-        links = filter(lambda x: node in [x.node1, x.node2], self.links)
-        node_names = map(lambda x: x.name, links)
-        return list(filter(lambda x: x.name in node_names, self.nodes))
+        links = filter(lambda x: node.name in [x.node1, x.node2], self.links)
+        return list(map(lambda x: self.__find_opposite_node(x, node), links))
 
     def __find_node(self, name: str) -> Node:
         return list(filter(lambda x: x.name == name, self.nodes))[0]
@@ -62,16 +56,29 @@ class Router(object):
         node_names = [node1.name, node2.name]
         return list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.links))[0]
 
+    def __find_opposite_node(self, link: Link, node: Node) -> Node:
+        if node.name != link.node1:
+            return self.__find_node(link.node1)
+        else:
+            return self.__find_node(link.node2)
+
 
 class Node(object):
     def __init__(self, name: str):
         self.name = name
 
+    def __repr__(self):
+        cls = type(self)
+        return f"{self.name} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+
+    def __hash__(self):
+        return hash(self.name)
+
     def __eq__(self, other: Node):
         return self.name == other.name
 
     def __ne__(self, other: Node):
-        return not self.__eq__(other)
+        return not self == other
 
 
 class Link(object):
@@ -80,6 +87,10 @@ class Link(object):
         self.node1 = node1
         self.node2 = node2
         self.cost = cost
+
+    def __repr__(self):
+        cls = type(self)
+        return f"{self.name} {self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
 
 class Path(object):
