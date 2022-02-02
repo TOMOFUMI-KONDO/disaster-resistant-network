@@ -32,8 +32,6 @@ class RouterTest(unittest.TestCase):
          1    1    3    1    2    5    2
          |      \  |  /      |  /      |
         n13 --3-- n14 --2-- n15 --4-- n16
-
-        start: n13, dest: n04
         """
         nodes = [Node(f"n{i}") for i in range(1, 17)]
         links = [
@@ -78,6 +76,15 @@ class RouterTest(unittest.TestCase):
             Link("l14", "n6", "n9", 2),
             Link("l7", "n3", "n6", 2),
             Link("l6", "n3", "n4", 1),
+        ])
+
+        router.set_dst(Node("n16"))
+        self.assertListEqual(router.calc_shortest_path().links, [
+            Link("l22", "n9", "n13", 1),
+            Link("l23", "n9", "n14", 1),
+            Link("l27", "n11", "n14", 1),
+            Link("l26", "n11", "n12", 1),
+            Link("l30", "n12", "n16", 2),
         ])
 
 
