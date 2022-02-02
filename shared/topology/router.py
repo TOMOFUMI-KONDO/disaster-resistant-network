@@ -5,22 +5,28 @@ class Router(object):
     INF = 10 ** 10
 
     def __init__(self, nodes: list[Node], links: list[Link], src: Node, dst: Node):
-        self.nodes = nodes
-        self.links = links
-        self.src = src
-        self.dst = dst
+        self.__nodes = nodes
+        self.__links = links
+        self.__src = src
+        self.__dst = dst
+
+    def set_src(self, node: Node):
+        self.__src = node
+
+    def set_dst(self, node: Node):
+        self.__dst = node
 
     # calculate the shortest path from src to dst by dijkstra
     def calc_shortest_path(self) -> Path:
         link_to_node: dict[Node, Link] = {}
-        fixed_nodes = [self.src]
-        costs = {self.src: 0}
-        for n in self.nodes:
-            if n != self.src:
+        fixed_nodes = [self.__src]
+        costs = {self.__src: 0}
+        for n in self.__nodes:
+            if n != self.__src:
                 costs[n] = self.INF
 
         # update neighbors of last fixed node
-        while self.dst not in fixed_nodes:
+        while self.__dst not in fixed_nodes:
             last_fixed_node = fixed_nodes[-1]
             for neighbor in self.__neighbors(last_fixed_node):
                 # don't update fixed_neighbor
@@ -38,23 +44,23 @@ class Router(object):
             fixed_nodes.append(next_fixed_node)
 
         path = Path()
-        node = self.dst
-        while node != self.src:
+        node = self.__dst
+        while node != self.__src:
             path.push(link_to_node[node])
             node = self.__find_opposite_node(link_to_node[node], node)
 
         return path
 
     def __neighbors(self, node: Node) -> list[Node]:
-        links = filter(lambda x: node.name in [x.node1, x.node2], self.links)
+        links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)
         return list(map(lambda x: self.__find_opposite_node(x, node), links))
 
     def __find_node(self, name: str) -> Node:
-        return list(filter(lambda x: x.name == name, self.nodes))[0]
+        return list(filter(lambda x: x.name == name, self.__nodes))[0]
 
     def __find_link_by_nodes(self, node1: Node, node2: Node) -> Link:
         node_names = [node1.name, node2.name]
-        return list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.links))[0]
+        return list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.__links))[0]
 
     def __find_opposite_node(self, link: Link, node: Node) -> Node:
         if node.name != link.node1:
