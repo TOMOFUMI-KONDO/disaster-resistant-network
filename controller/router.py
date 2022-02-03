@@ -1,26 +1,8 @@
 from __future__ import annotations
 
-from mininet.topo import Topo
-
 
 class Router(object):
     INF = 10 ** 10
-
-    @classmethod
-    def from_mininet_topo(cls, topo: Topo, src: str, dst: str):
-        nodes = []
-        for s in topo.switches():
-            nodes.append(Node(s))
-        for n in topo.hosts():
-            nodes.append(Node(n))
-
-        topo_links = topo.links()
-        links = []
-        for i in range(len(topo_links)):
-            link = topo_links[i]
-            links.append(Link(f"l{i + 1}", link[0], link[1], None))  # TODO: set cost from link info
-
-        return Router(nodes, links, Node(src), Node(dst))
 
     def __init__(self, nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
         if nodes is None:
@@ -35,6 +17,21 @@ class Router(object):
 
         self.__src = src
         self.__dst = dst
+
+    def add_node(self, node: Node):
+        self.__nodes.append(node)
+
+    def rm_node(self, node: Node):
+        self.__nodes.remove(node)
+        links = self.__find_links_by_node(node)
+        for l in links:
+            self.rm_link(l)
+
+    def add_link(self, link: Link):
+        self.__links.append(link)
+
+    def rm_link(self, link: Link):
+        self.__links.remove(link)
 
     def set_src(self, node: Node):
         self.__src = node
@@ -84,9 +81,14 @@ class Router(object):
     def __find_node(self, name: str) -> Node:
         return list(filter(lambda x: x.name == name, self.__nodes))[0]
 
+    # return link between the two nodes
     def __find_link_by_nodes(self, node1: Node, node2: Node) -> Link:
         node_names = [node1.name, node2.name]
         return list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.__links))[0]
+
+    # return links connected to the node
+    def __find_links_by_node(self, node: Node) -> list[Link]:
+        return list(filter(lambda x: x.node1 == node.name or x.node2 == node.name, self.__links))
 
     def __find_opposite_node(self, link: Link, node: Node) -> Node:
         if node.name != link.node1:
@@ -114,18 +116,18 @@ class Node(object):
 
 
 class Link(object):
-    def __init__(self, name: str, node1: str, node2: str, cost: int):
-        self.name = name
+    def __init__(self, node1: str, node2: str, cost: int):
         self.node1 = node1
         self.node2 = node2
         self.cost = cost
 
     def __repr__(self):
         cls = type(self)
-        return f"{self.name} {self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+        return f"{self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
     def __eq__(self, other):
-        return self.name == other.name
+        return (self.node1 == other.node1 and self.node2 == other.node2) or \
+               (self.node1 == other.node2 and self.node2 == other.node1)
 
     def __ne__(self, other):
         return not self == other
