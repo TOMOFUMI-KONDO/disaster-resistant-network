@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-
 from mininet.cli import CLI
 from mininet.log import setLogLevel
 from mininet.net import Mininet
@@ -12,7 +11,7 @@ from mininet.topo import Topo
 class DisasterResistantNetworkTopo(Topo):
     def build(self, *args, **params):
         """
-        Topology is like below.
+        Topology is like below. (size = 3)
 
         h1 --- s1 --- s2 --- s3
                |      |      |
@@ -23,13 +22,13 @@ class DisasterResistantNetworkTopo(Topo):
 
         # add switches
         size = params["size"]
+        switches = []
         for i in range(size):
             for j in range(size):
                 dpid = size * i + j + 1
-                self.addSwitch(f"s{dpid}", dpid=str(dpid))
+                switches.append(self.addSwitch(f"s{dpid}", dpid=str(dpid)))
 
         # add links between switches
-        switches = self.switches()
         for i in range(size):
             for j in range(size):
                 current = switches[size * i + j]
@@ -41,11 +40,12 @@ class DisasterResistantNetworkTopo(Topo):
                     self.addLink(current, bottom)
 
         # add hosts
-        self.addHost(f"h1", ip=f"10.0.0.1", mac=f"00:00:00:00:00:01")
-        self.addHost(f"h2", ip=f"10.0.0.2", mac=f"00:00:00:00:00:02")
+        hosts = [
+            self.addHost(f"h1", ip=f"10.0.0.1", mac=f"00:00:00:00:00:01"),
+            self.addHost(f"h2", ip=f"10.0.0.2", mac=f"00:00:00:00:00:02"),
+        ]
 
         # add links between host and switch
-        hosts = self.hosts()
         self.addLink(hosts[0], switches[0])
         self.addLink(hosts[1], switches[-1])
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     net = Mininet(
         topo=DisasterResistantNetworkTopo(size=args.size),
-        controller=RemoteController("c1", ip="127.0.0.1")
+        controller=RemoteController("c0", port=6633),
     )
     net.start()
     CLI(net)
