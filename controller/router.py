@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 
 class Router(object):
     INF = 10 ** 10
@@ -18,34 +20,38 @@ class Router(object):
         self.__src = src
         self.__dst = dst
 
-    def get_nodes(self):
+    def get_nodes(self) -> list[Node]:
         return self.__nodes
 
     def add_node(self, node: Node):
         self.__nodes.append(node)
 
-    def rm_node(self, node: Node):
+    def rm_node(self, node: str):
+        node = self.__find_node(node)
+        if node is None:
+            return
+
         self.__nodes.remove(node)
         links = self.__find_links_by_node(node)
         [self.rm_link(l) for l in links]
 
-    def get_links(self):
+    def get_links(self) -> list[Link]:
         return self.__links
 
     def add_link(self, link: Link):
         self.__links.append(link)
 
-    def rm_link(self, link: Link):
-        self.__links.remove(link)
-
-    def rm_link_by_nodes(self, node1: str, node2: str):
+    def rm_link(self, node1: str, node2: str):
         link = self.__find_link_by_nodes(node1, node2)
+        if link is None:
+            return
+
         self.__links.remove(link)
 
-    def get_src(self):
+    def get_src(self) -> Node:
         return self.__src
 
-    def get_dst(self):
+    def get_dst(self) -> Node:
         return self.__dst
 
     def set_src(self, node: Node):
@@ -54,8 +60,13 @@ class Router(object):
     def set_dst(self, node: Node):
         self.__dst = node
 
-    # calculate the shortest path from src to dst by dijkstra
-    def calc_shortest_path(self) -> Path:
+    def calc_shortest_path(self) -> Optional[Path]:
+        """
+        Calculate the shortest path from src to dst by dijkstra.
+
+        :return:
+        Path:shortest path from src to dst
+        """
         link_to_node: dict[Node, Link] = {}
         fixed_nodes = [self.__src]
         costs = {self.__src: 0}
@@ -84,6 +95,9 @@ class Router(object):
         path = Path()
         node = self.__dst
         while node != self.__src:
+            if link_to_node.get(node) is None:
+                return
+
             path.push(link_to_node[node])
             node = self.__find_opposite_node(link_to_node[node], node)
 
@@ -91,21 +105,30 @@ class Router(object):
 
     def __neighbors(self, node: Node) -> list[Node]:
         links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)
-        return list(map(lambda x: self.__find_opposite_node(x, node), links))
+        neighbors = map(lambda x: self.__find_opposite_node(x, node), links)
+        return list(filter(lambda x: x is not None, neighbors))
 
-    def __find_node(self, name: str) -> Node:
-        return list(filter(lambda x: x.name == name, self.__nodes))[0]
+    def __find_node(self, name: str) -> Optional[Node]:
+        result = list(filter(lambda x: x.name == name, self.__nodes))
+        if len(result) == 0:
+            return
+
+        return result[0]
 
     # return link between the two nodes
-    def __find_link_by_nodes(self, node1: str, node2: str) -> Link:
+    def __find_link_by_nodes(self, node1: str, node2: str) -> Optional[Link]:
         node_names = [node1, node2]
-        return list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.__links))[0]
+        result = list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.__links))
+        if len(result) == 0:
+            return
+
+        return result[0]
 
     # return links connected to the node
     def __find_links_by_node(self, node: Node) -> list[Link]:
         return list(filter(lambda x: x.node1 == node.name or x.node2 == node.name, self.__links))
 
-    def __find_opposite_node(self, link: Link, node: Node) -> Node:
+    def __find_opposite_node(self, link: Link, node: Node) -> Optional[Node]:
         if node.name != link.node1:
             return self.__find_node(link.node1)
         else:
@@ -154,6 +177,11 @@ class Path(object):
             self.links = []
         else:
             self.links = links
+
+    def __repr__(self):
+        cls = type(self)
+        return " ".join([l.__repr__() for l in self.links]) + \
+               f"<{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
     def append(self, link: Link):
         self.links.append(link)

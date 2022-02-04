@@ -15,6 +15,7 @@ class RouterTest(unittest.TestCase):
         router = Router([src, dst], links, src, dst)
         path = router.calc_shortest_path()
 
+        self.assertIsNotNone(path)
         self.assertListEqual(path.links, links)
 
     def test_calc_shortest_path_complex_topology(self):
@@ -71,7 +72,9 @@ class RouterTest(unittest.TestCase):
         ]
 
         router = Router(nodes, links, Node("n13"), Node("n4"))
-        self.assertListEqual(router.calc_shortest_path().links, [
+        path = router.calc_shortest_path()
+        self.assertIsNotNone(path)
+        self.assertListEqual(path.links, [
             links[21],
             links[13],
             links[6],
@@ -79,7 +82,9 @@ class RouterTest(unittest.TestCase):
         ])
 
         router.set_dst(Node("n16"))
-        self.assertListEqual(router.calc_shortest_path().links, [
+        path = router.calc_shortest_path()
+        self.assertIsNotNone(path)
+        self.assertListEqual(path.links, [
             links[21],
             links[22],
             links[26],

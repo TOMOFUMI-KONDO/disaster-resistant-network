@@ -6,7 +6,7 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.controller import Datapath
 from ryu.controller.handler import set_ev_cls, MAIN_DISPATCHER, CONFIG_DISPATCHER
-from ryu.lib.packet.ether_types import ETH_TYPE_IPV6
+from ryu.lib.packet.ether_types import ETH_TYPE_IPV6, ETH_TYPE_IP
 from ryu.lib.packet.ethernet import ethernet
 from ryu.lib.packet.packet import Packet
 from ryu.ofproto.ofproto_v1_3 import OFPP_CONTROLLER, OFPCML_NO_BUFFER, OFP_VERSION, OFP_NO_BUFFER, \
@@ -15,7 +15,7 @@ from ryu.ofproto.ofproto_v1_3_parser import OFPMatch, OFPActionOutput, OFPPacket
     OFPPacketIn, OFPAction, OFPPortStatus, OFPPort
 
 from flow_addable import FlowAddable
-from router import Router, Node, Link
+from router import Router, Node, Link, Path
 
 
 class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
@@ -31,8 +31,9 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
 
     def __init__(self, *args, **kwargs):
         super(DisasterResistantNetwork, self).__init__(*args, **kwargs)
-        self.datapaths: dict[int, Datapath] = {}  # dict[dpid, Datapath]
-        self.mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
+        self.__route_priority = 100  # this will be incremented on each routing
+        self.__datapaths: dict[int, Datapath] = {}  # dict[dpid, Datapath]
+        self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
 
         # TODO: Make router dynamically, not statically.
         """
@@ -40,33 +41,35 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
 
         h1 --- s1 --(1G)-- s2
                |           |
-             (100M)      (10M)
+             (10M)       (100M)
                |           |
                s3 --(1G)-- s4 --- h2
         """
         # dict[dpid, dict[port, Node]]
-        self.port_to_node: dict[int, dict[int, Node]] = {
+        self.__port_to_node: dict[int, dict[int, Node]] = {
             1: {1: Node("s2"), 2: Node("s3")},
             2: {1: Node("s1"), 2: Node("s4")},
             3: {1: Node("s1"), 2: Node("s4")},
             4: {1: Node("s2"), 2: Node("s3")},
         }
-        self.router = Router(
+        self.__router = Router(
             [Node("s1"), Node("s2"), Node("s3"), Node("s4")],
             [
                 Link("s1", "s2", self.COST_OF_MBPS[1000]),
-                Link("s1", "s3", self.COST_OF_MBPS[100]),
-                Link("s2", "s4", self.COST_OF_MBPS[10]),
+                Link("s1", "s3", self.COST_OF_MBPS[10]),
+                Link("s2", "s4", self.COST_OF_MBPS[100]),
                 Link("s3", "s4", self.COST_OF_MBPS[1000]),
             ],
             Node("s1"),
-            Node("S4"),
+            Node("s4"),
         )
+        self.h1 = "10.0.0.1"
+        self.h2 = "10.0.0.2"
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         dp: Datapath = ev.msg.datapath
-        self.datapaths[dp.id] = dp
+        self.__datapaths[dp.id] = dp
 
         self.logger.info("[INFO]OFPSwitchFeature: datapath %d", dp.id)
 
@@ -95,14 +98,19 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
         msg: OFPPortStatus = ev.msg
         dpid = msg.datapath.id
         desc: OFPPort = msg.desc
+        port_no = desc.port_no
 
-        self.logger.info("[INFO]PortStatus reason:%d datapath:%s port:%d", msg.reason, dpid, desc.port_no)
+        self.logger.info("[INFO]PortStatus reason:%d datapath:%s port:%d", msg.reason, dpid, port_no)
 
-        if msg.reason == OFPPR_DELETE:
-            print(self.router.get_links())
-            opposite = self.port_to_node[dpid].pop(desc.port_no)
-            self.router.rm_link_by_nodes(f"s{dpid}", opposite.name)
-            print(self.router.get_links())
+        if msg.reason == OFPPR_DELETE and self.__port_to_node[dpid].get(port_no) is not None:
+            opposite = self.__port_to_node[dpid].pop(port_no)
+            self.__router.rm_link(f"s{dpid}", opposite.name)
+
+            path = self.__router.calc_shortest_path()
+            if path is None:
+                return
+
+            self.__set_route_by_path(path)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn)
     def packet_in_handler(self, ev):
@@ -133,15 +141,15 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
         dp.send_msg(out)
 
     def __handle_eth(self, eth: ethernet, dp: Datapath, in_port: int, buffer_id) -> Optional[list[OFPAction]]:
-        self.mac_to_port.setdefault(dp.id, {})
+        self.__mac_to_port.setdefault(dp.id, {})
         self.logger.info("[INFO]PacketIn ether_type:%s datapath:%s mac_src:%s mac_dst:%s in_port:%d",
                          hex(eth.ethertype), dp.id, eth.src, eth.dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
-        self.mac_to_port[dp.id][eth.src] = in_port
+        self.__mac_to_port[dp.id][eth.src] = in_port
 
-        if eth.dst in self.mac_to_port[dp.id]:
-            out_port = self.mac_to_port[dp.id][eth.dst]
+        if eth.dst in self.__mac_to_port[dp.id]:
+            out_port = self.__mac_to_port[dp.id][eth.dst]
         else:
             out_port = OFPP_FLOOD
 
@@ -156,3 +164,26 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
                 self._add_flow(dp, 10, match, actions)
 
         return actions
+
+    def __set_route_by_path(self, path: Path):
+        for l in path.links:
+            node1_dpid = self.__to_dpid(l.node1)
+            port_node1_to_node2 = self.__find_port(node1_dpid, Node(l.node2))
+            self._add_flow(self.__datapaths[node1_dpid], self.__route_priority,
+                           OFPMatch(eth_type=ETH_TYPE_IP, ipv4_dst=self.h2), [OFPActionOutput(port_node1_to_node2)])
+
+            node2_dpid = self.__to_dpid(l.node2)
+            port_node2_to_node1 = self.__find_port(node2_dpid, Node(l.node1))
+            self._add_flow(self.__datapaths[node2_dpid], self.__route_priority,
+                           OFPMatch(eth_type=ETH_TYPE_IP, ipv4_dst=self.h1), [OFPActionOutput(port_node2_to_node1)])
+
+        self.__route_priority += 1
+
+    def __find_port(self, dpid: int, node: Node) -> Optional[int]:
+        for k, v in self.__port_to_node[dpid].items():
+            if v == node:
+                return k
+
+    def __to_dpid(self, switch_name: str) -> int:
+        # assume switch name is like "s[0-9]+"
+        return int(switch_name[1:])
