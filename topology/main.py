@@ -23,6 +23,7 @@ class DisasterResistantNetworkTopo(Topo):
                s7 --- s8 --- s9 --- h2
         """
 
+        # TODO: create any given size topology
         # add switches
         # size = params["size"]
         # switches = []
