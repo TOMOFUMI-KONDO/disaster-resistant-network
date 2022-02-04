@@ -78,7 +78,7 @@ class Router(object):
         links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)
         return list(map(lambda x: self.__find_opposite_node(x, node), links))
 
-    def __find_node(self, name: str) -> Node:
+    def __find_node(self, name: int) -> Node:
         return list(filter(lambda x: x.name == name, self.__nodes))[0]
 
     # return link between the two nodes
@@ -98,7 +98,7 @@ class Router(object):
 
 
 class Node(object):
-    def __init__(self, name: str):
+    def __init__(self, name: int):
         self.name = name
 
     def __repr__(self):
@@ -116,7 +116,7 @@ class Node(object):
 
 
 class Link(object):
-    def __init__(self, node1: str, node2: str, cost: int):
+    def __init__(self, node1: int, node2: int, cost: int):
         self.node1 = node1
         self.node2 = node2
         self.cost = cost
