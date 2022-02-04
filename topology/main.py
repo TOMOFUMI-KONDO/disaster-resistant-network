@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from mininet.cli import CLI
+from mininet.link import TCLink
 from mininet.log import setLogLevel
 from mininet.net import Mininet
 from mininet.node import RemoteController
@@ -39,10 +40,10 @@ class DisasterResistantNetworkTopo(Topo):
         #             bottom = switches[size * (i + 1) + j]
         #             self.addLink(current, bottom)
         switches = [self.addSwitch(f"s{i}", dpid=str(i)) for i in range(1, 5)]
-        self.addLink(switches[0], switches[1], bw=1000)
-        self.addLink(switches[0], switches[2], bw=100)
-        self.addLink(switches[1], switches[3], bw=10)
-        self.addLink(switches[2], switches[3], bw=1000)
+        self.addLink(switches[0], switches[1], cls=TCLink, bw=1000)
+        self.addLink(switches[0], switches[2], cls=TCLink, bw=100)
+        self.addLink(switches[1], switches[3], cls=TCLink, bw=10)
+        self.addLink(switches[2], switches[3], cls=TCLink, bw=1000)
 
         # add hosts
         hosts = [
