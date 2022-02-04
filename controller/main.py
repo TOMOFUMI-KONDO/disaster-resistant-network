@@ -6,14 +6,13 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.controller import Datapath
 from ryu.controller.handler import set_ev_cls, MAIN_DISPATCHER, CONFIG_DISPATCHER
-from ryu.lib.packet.ether_types import ETH_TYPE_IP, ETH_TYPE_IPV6
+from ryu.lib.packet.ether_types import ETH_TYPE_IPV6
 from ryu.lib.packet.ethernet import ethernet
-from ryu.lib.packet.ipv4 import ipv4
 from ryu.lib.packet.packet import Packet
 from ryu.ofproto.ofproto_v1_3 import OFPP_CONTROLLER, OFPCML_NO_BUFFER, OFP_VERSION, OFP_NO_BUFFER, \
-    OFPP_FLOOD
+    OFPP_FLOOD, OFPPR_DELETE
 from ryu.ofproto.ofproto_v1_3_parser import OFPMatch, OFPActionOutput, OFPPacketOut, \
-    OFPPacketIn, OFPAction, OFPPortStatus
+    OFPPacketIn, OFPAction, OFPPortStatus, OFPPort
 
 from flow_addable import FlowAddable
 from router import Router, Node, Link
@@ -22,7 +21,7 @@ from router import Router, Node, Link
 class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
     OFP_VERSIONS = [OFP_VERSION]
 
-    # Faster bps, lower cost
+    # faster bps, lower cost
     COST_OF_MBPS = {
         10000: 1,
         1000: 10,
@@ -32,19 +31,26 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
 
     def __init__(self, *args, **kwargs):
         super(DisasterResistantNetwork, self).__init__(*args, **kwargs)
-        self.datapaths: dict[int, Datapath] = {}
-        self.mac_to_port: dict[int, dict[str, int]] = {}
-        self.ip_to_port: dict[int, dict[str, int]] = {}
+        self.datapaths: dict[int, Datapath] = {}  # dict[dpid, Datapath]
+        self.mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
 
+        # TODO: Make router dynamically, not statically.
         """
         Topology is like below. (size = 2)
 
-        h1 --- s1 -1G- s2
-               |        |
-              100M     10M 
-               |        |
-               s3 -1G- s4 --- h2
+        h1 --- s1 --(1G)-- s2
+               |           |
+             (100M)      (10M)
+               |           |
+               s3 --(1G)-- s4 --- h2
         """
+        # dict[dpid, dict[port, Node]]
+        self.port_to_node: dict[int, dict[int, Node]] = {
+            1: {1: Node("s2"), 2: Node("s3")},
+            2: {1: Node("s1"), 2: Node("s4")},
+            3: {1: Node("s1"), 2: Node("s4")},
+            4: {1: Node("s2"), 2: Node("s3")},
+        }
         self.router = Router(
             [Node("s1"), Node("s2"), Node("s3"), Node("s4")],
             [
@@ -60,14 +66,14 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         dp: Datapath = ev.msg.datapath
-        self.logger.info("[INFO]OFPSwitchFeature: Datapath %d", dp.id)
-
         self.datapaths[dp.id] = dp
+
+        self.logger.info("[INFO]OFPSwitchFeature: datapath %d", dp.id)
 
         # send PacketIn to controller when receive unknown packet
         self._add_flow(dp, 0, OFPMatch(), [OFPActionOutput(OFPP_CONTROLLER, OFPCML_NO_BUFFER)])
 
-        # set static route to prevent flood loop
+        # set drop action to prevent flood loop
         if dp.id == 3:
             self._add_flow(dp, 1, OFPMatch(in_port=2), [])
         if dp.id == 4:
@@ -87,9 +93,16 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
     @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
     def port_status_handler(self, ev):
         msg: OFPPortStatus = ev.msg
+        dpid = msg.datapath.id
+        desc: OFPPort = msg.desc
 
-        # if msg.reason == OFPPR_DELETE:
-        #     self.logger.info(msg)
+        self.logger.info("[INFO]PortStatus reason:%d datapath:%s port:%d", msg.reason, dpid, desc.port_no)
+
+        if msg.reason == OFPPR_DELETE:
+            print(self.router.get_links())
+            opposite = self.port_to_node[dpid].pop(desc.port_no)
+            self.router.rm_link_by_nodes(f"s{dpid}", opposite.name)
+            print(self.router.get_links())
 
     @set_ev_cls(ofp_event.EventOFPPacketIn)
     def packet_in_handler(self, ev):
@@ -106,11 +119,7 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
 
         dp: Datapath = msg.datapath
         in_port = msg.match["in_port"]
-        if eth.ethertype == ETH_TYPE_IP:
-            actions = self.__handle_ip(pkt.get_protocol(ipv4), dp, in_port, buffer_id)
-        else:
-            actions = self.__handle_eth(eth, dp, in_port, buffer_id)
-
+        actions = self.__handle_eth(eth, dp, in_port, buffer_id)
         if actions is None:
             return
 
@@ -125,8 +134,7 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
 
     def __handle_eth(self, eth: ethernet, dp: Datapath, in_port: int, buffer_id) -> Optional[list[OFPAction]]:
         self.mac_to_port.setdefault(dp.id, {})
-
-        self.logger.info("[INFO]PacketIn ether_type: %s datapath:%s mac_src:%s mac_dst:%s in_port:%d",
+        self.logger.info("[INFO]PacketIn ether_type:%s datapath:%s mac_src:%s mac_dst:%s in_port:%d",
                          hex(eth.ethertype), dp.id, eth.src, eth.dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
@@ -146,31 +154,5 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
                 return None
             else:
                 self._add_flow(dp, 10, match, actions)
-
-        return actions
-
-    def __handle_ip(self, ip: ipv4, dp: Datapath, in_port: int, buffer_id) -> Optional[list[OFPAction]]:
-        self.ip_to_port.setdefault(dp.id, {})
-
-        self.logger.info("[INFO]PacketIn datapath:%s ip_src:%s ip_dst:%s in_port:%d", dp.id, ip.src, ip.dst, in_port)
-
-        # learn a ipv4 address to avoid FLOOD next time.
-        self.ip_to_port[dp.id][ip.src] = in_port
-
-        if ip.dst in self.ip_to_port[dp.id]:
-            out_port = self.ip_to_port[dp.id][ip.dst]
-        else:
-            out_port = OFPP_FLOOD
-
-        actions = [OFPActionOutput(out_port)]
-
-        # install a flow to avoid packet_in next time
-        if out_port != OFPP_FLOOD:
-            match = OFPMatch(eth_type=ETH_TYPE_IP, ipv4_dst=ip.dst)
-            if buffer_id != OFP_NO_BUFFER:
-                self._add_flow(dp, 20, match, actions, buffer_id)
-                return None
-            else:
-                self._add_flow(dp, 20, match, actions)
 
         return actions

@@ -18,20 +18,35 @@ class Router(object):
         self.__src = src
         self.__dst = dst
 
+    def get_nodes(self):
+        return self.__nodes
+
     def add_node(self, node: Node):
         self.__nodes.append(node)
 
     def rm_node(self, node: Node):
         self.__nodes.remove(node)
         links = self.__find_links_by_node(node)
-        for l in links:
-            self.rm_link(l)
+        [self.rm_link(l) for l in links]
+
+    def get_links(self):
+        return self.__links
 
     def add_link(self, link: Link):
         self.__links.append(link)
 
     def rm_link(self, link: Link):
         self.__links.remove(link)
+
+    def rm_link_by_nodes(self, node1: str, node2: str):
+        link = self.__find_link_by_nodes(node1, node2)
+        self.__links.remove(link)
+
+    def get_src(self):
+        return self.__src
+
+    def get_dst(self):
+        return self.__dst
 
     def set_src(self, node: Node):
         self.__src = node
@@ -57,7 +72,7 @@ class Router(object):
                     continue
 
                 # update cost if it's less than current
-                link_to_neighbor = self.__find_link_by_nodes(last_fixed_node, neighbor)
+                link_to_neighbor = self.__find_link_by_nodes(last_fixed_node.name, neighbor.name)
                 if costs[last_fixed_node] + link_to_neighbor.cost < costs[neighbor]:
                     costs[neighbor] = costs[last_fixed_node] + link_to_neighbor.cost
                     link_to_node[neighbor] = link_to_neighbor
@@ -82,8 +97,8 @@ class Router(object):
         return list(filter(lambda x: x.name == name, self.__nodes))[0]
 
     # return link between the two nodes
-    def __find_link_by_nodes(self, node1: Node, node2: Node) -> Link:
-        node_names = [node1.name, node2.name]
+    def __find_link_by_nodes(self, node1: str, node2: str) -> Link:
+        node_names = [node1, node2]
         return list(filter(lambda x: x.node1 in node_names and x.node2 in node_names, self.__links))[0]
 
     # return links connected to the node
