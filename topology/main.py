@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from time import sleep
+from datetime import datetime
 
 import argparse
 from mininet.cli import CLI
@@ -9,6 +9,53 @@ from mininet.log import setLogLevel, info
 from mininet.net import Mininet
 from mininet.node import RemoteController
 from mininet.topo import Topo
+
+
+def main():
+    args = parse()
+
+    setLogLevel(args.log)
+
+    net = Mininet(
+        topo=DisasterResistantNetworkTopo(),
+        controller=RemoteController("c0", port=6633),
+    )
+    net.start()
+    net.pingAll()
+
+    if args.cli:
+        CLI(net)
+    run(net)
+    if args.cli:
+        CLI(net)
+
+    net.pingAll()
+    net.stop()
+
+
+def parse() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    # parser.add_argument("--size", dest="size", type=int, default=2,
+    #                     help="size of mesh topology, size*size switches will be created.")
+    parser.add_argument("--cli", dest="cli", type=bool, default=0, help="enable cli")
+    parser.add_argument("--log", dest="log", type=str, default="info", help="log level")
+    return parser.parse_args()
+
+
+def run(net: Mininet):
+    h0, h1 = net.hosts[0], net.hosts[1]
+    # suffix = datetime.now().strftime('%Y%m%d_%H%M%S')
+    suffix=""
+    h0.cmd(f"./bin/server -v > log/server_{suffix}.log &")
+    h1.cmd(f"./bin/client -addr {h0.IP()}:44300 -file 1M.txt")
+
+    # start_disaster(net)
+
+
+def start_disaster(net: Mininet):
+    info("*** Link between s1 and s2 is being swept by tsunami...\n")
+    net.switches[0].cmd("ovs-vsctl del-port s1-eth1")
+    net.switches[0].cmd("ovs-vsctl del-port s2-eth1")
 
 
 class DisasterResistantNetworkTopo(Topo):
@@ -61,43 +108,5 @@ class DisasterResistantNetworkTopo(Topo):
 
 topos = {"disaster_resistant_network__topo": lambda: DisasterResistantNetworkTopo()}
 
-
-def parse() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    # parser.add_argument("--size", dest="size", type=int, default=2,
-    #                     help="size of mesh topology, size*size switches will be created.")
-    parser.add_argument("--cli", dest="cli", type=bool, default=0, help="enable cli")
-    parser.add_argument("--log", dest="log", type=str, default="info", help="log level")
-    return parser.parse_args()
-
-
-def do_disaster(net: Mininet):
-    info("*** Link between s1 and s2 is being swept by tsunami...\n")
-    net.switches[0].cmd("ovs-vsctl del-port s1-eth1")
-    net.switches[0].cmd("ovs-vsctl del-port s2-eth1")
-
-
 if __name__ == "__main__":
-    args = parse()
-
-    setLogLevel(args.log)
-
-    net = Mininet(
-        topo=DisasterResistantNetworkTopo(),
-        controller=RemoteController("c0", port=6633),
-    )
-    net.start()
-    net.pingAll()
-
-    if args.cli:
-        CLI(net)
-
-    sleep(3)
-    do_disaster(net)
-    sleep(3)
-
-    if args.cli:
-        CLI(net)
-
-    net.pingAll()
-    net.stop()
+    main()
