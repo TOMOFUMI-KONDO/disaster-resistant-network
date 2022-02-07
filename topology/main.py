@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from time import sleep
 
 import argparse
 from mininet.cli import CLI
@@ -21,7 +21,6 @@ def main():
         controller=RemoteController("c0", port=6633),
     )
     net.start()
-    net.pingAll()
 
     if args.cli:
         CLI(net)
@@ -29,7 +28,6 @@ def main():
     if args.cli:
         CLI(net)
 
-    net.pingAll()
     net.stop()
 
 
@@ -44,12 +42,23 @@ def parse() -> argparse.Namespace:
 
 def run(net: Mininet):
     h0, h1 = net.hosts[0], net.hosts[1]
-    # suffix = datetime.now().strftime('%Y%m%d_%H%M%S')
-    suffix=""
-    h0.cmd(f"./bin/server -v > log/server_{suffix}.log &")
-    h1.cmd(f"./bin/client -addr {h0.IP()}:44300 -file 1M.txt")
+    setup(h0)
+    start_backup(h1, f"{h0.IP()}:44300")
 
-    # start_disaster(net)
+    sleep(10)  # wait to start disaster
+    start_disaster(net)
+
+
+# prepare for back up data
+def setup(receiver):
+    # suffix = datetime.now().strftime('%Y%m%d_%H%M%S')
+    suffix = ""
+    receiver.cmd(f"./bin/server -v > log/server_{suffix}.log &")
+    sleep(5)  # wait to boot server
+
+
+def start_backup(sender, dst):
+    sender.cmd(f"./bin/client -addr {dst} -file 1G.txt &")
 
 
 def start_disaster(net: Mininet):
