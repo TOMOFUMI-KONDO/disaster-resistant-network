@@ -1,4 +1,3 @@
-.PHONY: build
 build: bin/server bin/client
 
 bin/server: server/main.go
@@ -6,3 +5,6 @@ bin/server: server/main.go
 
 bin/client: client/main.go
 	go build -o bin/client client/main.go
+
+clean:
+	rm -f bin/*
