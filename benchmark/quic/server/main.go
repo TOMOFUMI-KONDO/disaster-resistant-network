@@ -18,6 +18,7 @@ import (
 var (
 	addr    string
 	verbose bool
+	total   int
 )
 
 func init() {
@@ -34,7 +35,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
 	fmt.Printf("listening %s\n", addr)
 
 	for {
@@ -55,10 +55,8 @@ func handleSess(sess quic.Session) {
 	defer stream.Close()
 
 	buf := make([]byte, 1024)
-	var total int
-	var nr int
 	for {
-		nr, err = stream.Read(buf)
+		nr, err := stream.Read(buf)
 		if err != nil {
 			log.Println(err)
 			return
