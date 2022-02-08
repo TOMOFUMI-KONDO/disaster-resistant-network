@@ -77,10 +77,10 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
         self._add_flow(dp, 0, OFPMatch(), [OFPActionOutput(OFPP_CONTROLLER, OFPCML_NO_BUFFER)])
 
         # set drop action to prevent flood loop
-        if dp.id == 3:
-            self._add_flow(dp, 1, OFPMatch(in_port=2), [])
-        if dp.id == 4:
-            self._add_flow(dp, 1, OFPMatch(in_port=2), [])
+        # if dp.id == 3:
+        #     self._add_flow(dp, 1, OFPMatch(in_port=2), [])
+        # if dp.id == 4:
+        #     self._add_flow(dp, 1, OFPMatch(in_port=2), [])
 
     # TODO: use to create topology dynamically
     # @set_ev_cls(ofp_event.EventOFPPortDescStatsReply)
