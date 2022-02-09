@@ -8,69 +8,103 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 )
 
+const (
+	RetryInterval = time.Second * 3
+	WriteTimeout  = time.Second * 5
+)
+
 var (
-	addr string
-	file string
+	addr   string
+	chunk  string
+	offset int64
 )
 
 func init() {
 	flag.StringVar(&addr, "addr", "localhost:44300", "server address")
-	flag.StringVar(&file, "file", "1K.txt", "file to send")
+	flag.StringVar(&chunk, "chunk", "1K.txt", "chunk file to send")
 	flag.Parse()
 }
 
 func main() {
 	w, err := os.Create("keylog.txt")
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create keylog.txt: %v\n", err)
 	}
 
-	session, err := quic.DialAddr(addr, genTLSConf(w), nil)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	for {
+		session, err := quic.DialAddr(addr, genTLSConf(w), nil)
+		if err != nil {
+			log.Printf("failed to dial addr: %v\nretrying...\n", err)
+			time.Sleep(RetryInterval)
+			continue
+		}
 
-	stream, err := session.OpenStreamSync(context.Background())
-	if err != nil {
-		log.Fatalln(err)
+		stream, err := session.OpenStreamSync(context.Background())
+		if err != nil {
+			log.Printf("failed to open stream sync: %v\nretrying...\n", err)
+			time.Sleep(RetryInterval)
+			continue
+		}
+
+		if err = send(stream, &offset); err != nil {
+			log.Printf("failed to send: %v\nretrying...\n", err)
+			time.Sleep(RetryInterval)
+			continue
+		}
+
+		break
 	}
+}
+
+func send(stream quic.Stream, offset *int64) error {
 	defer stream.Close()
 
-	file, err := os.Open(fmt.Sprintf("client/chunk/%s", file))
+	file, err := os.Open(fmt.Sprintf("client/chunk/%s", chunk))
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	defer file.Close()
 
-	fmt.Println("sending data...")
 	buf := make([]byte, 1024)
-	var offset int64 = 0
+
+	fmt.Println("sending data...")
 	for {
-		nr, errRead := file.ReadAt(buf, offset)
-		if err != nil && err != io.EOF {
-			log.Fatalln(err)
+		nr, err := file.ReadAt(buf, *offset)
+		var fin bool
+		if err == io.EOF {
+			fin = true
+		} else if err != nil {
+			return err
 		}
 
-		offset += int64(nr)
-		if _, err = stream.Write(buf[:nr]); err != nil {
-			log.Fatalln(err)
+		if err = stream.SetWriteDeadline(time.Now().Add(WriteTimeout)); err != nil {
+			return err
 		}
 
-		if errRead == io.EOF {
+		nw, err := stream.Write(buf[:nr])
+		*offset += int64(nw)
+		if err != nil {
+			return err
+		}
+
+		if fin {
 			break
 		}
 	}
-	fmt.Println("done")
+	fmt.Println("done!")
 
 	received, err := io.ReadAll(stream)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	fmt.Printf("received: '%s'\n", received)
+
+	return nil
 }
 
 func genTLSConf(w io.Writer) *tls.Config {
