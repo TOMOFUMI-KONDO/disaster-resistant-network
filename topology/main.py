@@ -9,29 +9,15 @@ from mininet.net import Mininet
 from mininet.node import RemoteController
 
 from disaster_resistant_network_topo import DisasterResistantNetworkTopo
+from enums import Network
 
 
 def main():
     args = parse()
-
     setLogLevel(args.log)
 
-    net = Mininet(
-        topo=DisasterResistantNetworkTopo(),
-        controller=RemoteController("c0", port=6633),
-    )
-    receiver, sender = net.hosts[0], net.hosts[1]
-    switches = net.switches
-
-    net.start()
-
-    setup(receiver, switches)
-    net.pingAll()
-
-    run_disaster(receiver, sender, switches)
-    CLI(net)
-
-    net.stop()
+    for n in [Network.TCP, Network.QUIC]:
+        run_experiment(n)
 
 
 def parse() -> argparse.Namespace:
@@ -42,21 +28,43 @@ def parse() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def run_experiment(network: Network):
+    net = Mininet(
+        topo=DisasterResistantNetworkTopo(),
+        controller=RemoteController("c0", port=6633),
+    )
+    receiver, sender = net.hosts[0], net.hosts[1]
+    switches = net.switches
+
+    net.start()
+
+    setup(receiver, switches, network)
+    net.pingAll()
+
+    run_disaster(receiver, sender, switches, network)
+    CLI(net)
+
+    net.stop()
+
+
 # prepare for back up data
-def setup(receiver, switches):
+def setup(receiver, switches, network: Network):
     for s in switches:
         s.vsctl('set bridge', s, 'stp-enable=true')
 
-    receiver.cmd(f"./bin/server -v > server/server.log 2>&1 &")
+    network_name = network.name.lower()
+    receiver.cmd(f"./bin/{network_name}/server -v > server/{network_name}.log 2> server/{network_name}_err.log &")
     # receiver.cmd(f"./bin/server -v > server/{datetime.now().strftime('%Y%m%d_%H%M%S')}.log &")
 
     info('*** waiting to set STP...\n')
     sleep(60)
 
 
-def run_disaster(receiver, sender, switches):
+def run_disaster(receiver, sender, switches, network: Network):
     info("*** Disaster was predicted and start emergency backup!\n")
-    sender.cmd(f"./bin/client -addr {receiver.IP()}:44300 -chunk 1G.txt > client/client.log 2>&1 &")
+    network_name = network.name.lower()
+    sender.cmd(f"./bin/{network_name}/client -addr {receiver.IP()}:44300 -chunk 1G.txt "
+               f"> client/{network_name}.log 2> client/{network_name}_err.log &")
 
     # time until disaster arrives
     sleep(10)
