@@ -36,7 +36,7 @@ func main() {
 	// see: https://www.rfc-editor.org/rfc/rfc9001.html
 	listener, err := quic.ListenAddr(addr, genTLSConf(), nil)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("failed to listen addr: %v\n", err)
 	}
 	fmt.Printf("listening %s\n", addr)
 
