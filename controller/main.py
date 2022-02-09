@@ -108,6 +108,7 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
 
             path = self.__router.calc_shortest_path()
             if path is None:
+                self.logger.info("[INFO]no path available")
                 return
 
             self.__set_route_by_path(path)
