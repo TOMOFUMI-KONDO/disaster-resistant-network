@@ -54,7 +54,7 @@ func main() {
 func send(conn *tls.Conn, offset *int64) error {
 	defer conn.Close()
 
-	file, err := os.Open(fmt.Sprintf("client/chunk/%s", chunk))
+	file, err := os.Open(fmt.Sprintf("chunk/%s", chunk))
 	if err != nil {
 		return err
 	}

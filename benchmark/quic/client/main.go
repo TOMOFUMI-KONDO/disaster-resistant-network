@@ -64,7 +64,7 @@ func main() {
 func send(stream quic.Stream, offset *int64) error {
 	defer stream.Close()
 
-	file, err := os.Open(fmt.Sprintf("client/chunk/%s", chunk))
+	file, err := os.Open(fmt.Sprintf("chunk/%s", chunk))
 	if err != nil {
 		return err
 	}
