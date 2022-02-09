@@ -53,7 +53,7 @@ def setup(receiver, switches, network: Network):
         s.vsctl('set bridge', s, 'stp-enable=true')
 
     network_name = network.name.lower()
-    receiver.cmd(f"./bin/{network_name}/server -v > server/{network_name}.log 2> server/{network_name}_err.log &")
+    receiver.cmd(f"./bin/{network_name}/server -v > server/{network_name}.log 2>&1 &")
     # receiver.cmd(f"./bin/server -v > server/{datetime.now().strftime('%Y%m%d_%H%M%S')}.log &")
 
     info('*** waiting to set STP...\n')
@@ -63,8 +63,7 @@ def setup(receiver, switches, network: Network):
 def run_disaster(receiver, sender, switches, network: Network):
     info("*** Disaster was predicted and start emergency backup!\n")
     network_name = network.name.lower()
-    sender.cmd(f"./bin/{network_name}/client -addr {receiver.IP()}:44300 -chunk 1G.txt "
-               f"> client/{network_name}.log 2> client/{network_name}_err.log &")
+    sender.cmd(f"./bin/{network_name}/client -addr {receiver.IP()}:44300 -chunk 1G.txt 2>&1 &")
 
     # time until disaster arrives
     sleep(10)
