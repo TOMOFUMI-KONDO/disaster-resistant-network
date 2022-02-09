@@ -66,6 +66,11 @@ def run_disaster(receiver, sender, switches):
     switches[0].cmd("ovs-vsctl del-port s1-eth1")
     switches[0].cmd("ovs-vsctl del-port s2-eth1")
 
+    sleep(60)
+    info("*** Link between s3 and s4 is being swept by tsunami...\n")
+    switches[0].cmd("ovs-vsctl del-port s3-eth2")
+    switches[0].cmd("ovs-vsctl del-port s4-eth2")
+
 
 if __name__ == "__main__":
     main()
