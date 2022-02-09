@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from time import sleep
 
+from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 from mininet.net import Mininet
 from mininet.node import RemoteController
@@ -28,6 +29,7 @@ def main():
     net.pingAll()
 
     run_disaster(receiver, sender, switches)
+    CLI(net)
 
     net.stop()
 
