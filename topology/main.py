@@ -54,7 +54,7 @@ def setup(receiver, switches):
 
 def run_disaster(receiver, sender, switches):
     info("*** Disaster was predicted and start emergency backup")
-    sender.cmd(f"./bin/client -addr {receiver.IP()}:44300 -file 1G.txt &")
+    sender.cmd(f"./bin/client -addr {receiver.IP()}:44300 -file 1G.txt > client/client.log &")
 
     # time until disaster arrives
     sleep(10)
