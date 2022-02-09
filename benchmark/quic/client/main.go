@@ -110,7 +110,7 @@ func send(stream quic.Stream, offset *int64) error {
 func genTLSConf(w io.Writer) *tls.Config {
 	return &tls.Config{
 		InsecureSkipVerify: true,
-		NextProtos:         []string{"quic-echo-example"},
+		NextProtos:         []string{"benchmark"},
 		KeyLogWriter:       w,
 	}
 }
