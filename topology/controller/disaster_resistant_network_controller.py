@@ -18,7 +18,7 @@ from flow_addable import FlowAddable
 from router import Router, Node, Link, Path
 
 
-class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
+class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     OFP_VERSIONS = [OFP_VERSION]
 
     # faster bps, lower cost
@@ -30,7 +30,7 @@ class DisasterResistantNetwork(app_manager.RyuApp, FlowAddable):
     }
 
     def __init__(self, *args, **kwargs):
-        super(DisasterResistantNetwork, self).__init__(*args, **kwargs)
+        super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
         self.__route_priority = 100  # this will be incremented on each routing
         self.__datapaths: dict[int, Datapath] = {}  # dict[dpid, Datapath]
         self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
