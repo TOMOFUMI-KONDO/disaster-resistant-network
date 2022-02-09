@@ -51,7 +51,7 @@ def setup(receiver, switches):
     # receiver.cmd(f"./bin/server -v > server/{datetime.now().strftime('%Y%m%d_%H%M%S')}.log &")
 
     info('*** waiting to set STP...\n')
-    sleep(30)
+    sleep(60)
 
 
 def run_disaster(receiver, sender, switches):
