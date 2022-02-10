@@ -11,14 +11,14 @@ class DisasterScheduler(object):
         s = self.__switches[0]
 
         # time until disaster arrives
-        sleep(10)
+        sleep(30)
 
         # disaster arrives
         info("*** Link between s1 and s2 is being swept by tsunami...\n")
         s.cmd("ovs-vsctl del-port s1-eth1")
         s.cmd("ovs-vsctl del-port s2-eth1")
 
-        sleep(60)
+        sleep(120)
         info("*** Link between s3 and s4 is being swept by tsunami...\n")
         s.cmd("ovs-vsctl del-port s3-eth2")
         s.cmd("ovs-vsctl del-port s4-eth2")
