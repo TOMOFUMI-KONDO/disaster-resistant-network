@@ -68,7 +68,7 @@ func handleSess(sess quic.Session) {
 
 		total += int64(nr)
 		if verbose {
-			fmt.Printf("now %dbyte...\n", total)
+			fmt.Printf("now %s...\n", benchmark.FormatSize(total))
 		}
 
 		if nr < len(buf) {
@@ -79,7 +79,7 @@ func handleSess(sess quic.Session) {
 	fmt.Printf("done!\ntotal %dbyte\n", total)
 
 	// tell received size
-	if _, err = stream.Write([]byte(fmt.Sprintf("total %dbyte", total))); err != nil {
+	if _, err = stream.Write([]byte(fmt.Sprintf("total %s", benchmark.FormatSize(total)))); err != nil {
 		fmt.Printf("failed to write: %v\n", err)
 	}
 }
