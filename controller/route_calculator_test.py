@@ -1,9 +1,9 @@
 import unittest
 
-from router import Router, Node, Link
+from route_calculator import RouteCalculator, Node, Link
 
 
-class RouterTest(unittest.TestCase):
+class RouteCalculatorTest(unittest.TestCase):
     def test_calc_shortest_path_simple_topology(self):
         """
         n1(src) --1-- n2(dst)
@@ -12,7 +12,7 @@ class RouterTest(unittest.TestCase):
         dst = Node("n2")
         links = [Link(src.name, dst.name, 1)]
 
-        router = Router([src, dst], links, src, dst)
+        router = RouteCalculator([src, dst], links, src, dst)
         path = router.calc_shortest_path()
 
         self.assertIsNotNone(path)
@@ -71,7 +71,7 @@ class RouterTest(unittest.TestCase):
             Link("n15", "n16", 4),
         ]
 
-        router = Router(nodes, links, Node("n13"), Node("n4"))
+        router = RouteCalculator(nodes, links, Node("n13"), Node("n4"))
         path = router.calc_shortest_path()
         self.assertIsNotNone(path)
         self.assertListEqual(path.links, [

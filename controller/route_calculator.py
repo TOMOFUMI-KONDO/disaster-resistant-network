@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 
-class Router(object):
+class RouteCalculator(object):
     INF = 10 ** 10
 
     def __init__(self, nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
