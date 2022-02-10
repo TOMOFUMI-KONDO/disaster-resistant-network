@@ -88,6 +88,11 @@ func send(conn *tls.Conn, offset *int64) error {
 	}
 	fmt.Println("done!")
 
+	// notify finish
+	if _, err := conn.Write([]byte("fin")); err != nil {
+		return err
+	}
+
 	received, err := io.ReadAll(conn)
 	if err != nil {
 		return err

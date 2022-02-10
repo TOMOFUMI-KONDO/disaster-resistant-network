@@ -98,6 +98,10 @@ func send(stream quic.Stream, offset *int64) error {
 	}
 	fmt.Println("done!")
 
+	if _, err := stream.Write([]byte("fin")); err != nil {
+		return err
+	}
+
 	received, err := io.ReadAll(stream)
 	if err != nil {
 		return err
