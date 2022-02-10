@@ -8,9 +8,9 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event, controller, handler
 from ryu.lib.packet import ether_types, ethernet, packet
 
-from controller.components import Node, Path, Link
-from controller.flow_addable import FlowAddable
-from controller.route_calculator import RouteCalculator
+from components import Node, Path, Link
+from flow_addable import FlowAddable
+from route_calculator import RouteCalculator
 
 
 class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):

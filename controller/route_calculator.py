@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from components import Node, Link, Path
-from controller.enums import RoutingAlgorithm
+from enums import RoutingAlgorithm
 
 
 class RouteCalculator(object):

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class Node(object):
     def __init__(self, name: str):
         self.name = name
@@ -26,11 +29,11 @@ class Link(object):
         cls = type(self)
         return f"{self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Link):
         return (self.node1 == other.node1 and self.node2 == other.node2) or \
                (self.node1 == other.node2 and self.node2 == other.node1)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Link):
         return not self == other
 
 
