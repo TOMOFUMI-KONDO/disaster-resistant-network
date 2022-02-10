@@ -106,7 +106,10 @@ class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAd
                 self.logger.info("[INFO]no path available")
 
             # NOTE: This is temporary impl that initializes when all link is removed to run experiment in succession.
-            if len(self.__router.get_links()) == 0:
+            num_link = 0
+            for x in self.__port_to_node.values():
+                num_link += len(x.keys())
+            if num_link == 0:
                 self.logger.info('[INFO]initialize controller')
                 self.__init()
 
