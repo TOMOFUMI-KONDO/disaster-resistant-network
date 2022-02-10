@@ -8,12 +8,12 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event, controller, handler
 from ryu.lib.packet import ether_types, ethernet, packet
 
-import flow_addable
-import route_calculator as rc
+from controller.components import Node, Path, Link
+from controller.flow_addable import FlowAddable
+from controller.route_calculator import RouteCalculator
 
 
-# TODO: implement reset feature to run multiple experiments in succession.
-class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAddable):
+class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     OFP_VERSIONS = [ofproto.OFP_VERSION]
 
     # faster bps, lower cost
@@ -44,22 +44,22 @@ class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAd
                s3 --(1G)-- s4 --- h2
         """
         # dict[dpid, dict[port, Node]]
-        self.__port_to_node: dict[int, dict[int, rc.Node]] = {
-            1: {1: rc.Node("s2"), 2: rc.Node("s3")},
-            2: {1: rc.Node("s1"), 2: rc.Node("s4")},
-            3: {1: rc.Node("s1"), 2: rc.Node("s4")},
-            4: {1: rc.Node("s2"), 2: rc.Node("s3")},
+        self.__port_to_node: dict[int, dict[int, Node]] = {
+            1: {1: Node("s2"), 2: Node("s3")},
+            2: {1: Node("s1"), 2: Node("s4")},
+            3: {1: Node("s1"), 2: Node("s4")},
+            4: {1: Node("s2"), 2: Node("s3")},
         }
-        self.__router = rc.RouteCalculator(
-            [rc.Node("s1"), rc.Node("s2"), rc.Node("s3"), rc.Node("s4")],
+        self.__router = RouteCalculator(
+            [Node("s1"), Node("s2"), Node("s3"), Node("s4")],
             [
-                rc.Link("s1", "s2", self.COST_OF_MBPS[1000]),
-                rc.Link("s1", "s3", self.COST_OF_MBPS[10]),
-                rc.Link("s2", "s4", self.COST_OF_MBPS[100]),
-                rc.Link("s3", "s4", self.COST_OF_MBPS[1000]),
+                Link("s1", "s2", self.COST_OF_MBPS[1000]),
+                Link("s1", "s3", self.COST_OF_MBPS[10]),
+                Link("s2", "s4", self.COST_OF_MBPS[100]),
+                Link("s3", "s4", self.COST_OF_MBPS[1000]),
             ],
-            rc.Node("s1"),
-            rc.Node("s4"),
+            Node("s1"),
+            Node("s4"),
         )
         self.h1 = "10.0.0.1"
         self.h2 = "10.0.0.2"
@@ -167,23 +167,23 @@ class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAd
 
         return actions
 
-    def __set_route_by_path(self, path: rc.Path):
+    def __set_route_by_path(self, path: Path):
         for l in path.links:
             node1_dpid = self.__to_dpid(l.node1)
-            port_node1_to_node2 = self.__find_port(node1_dpid, rc.Node(l.node2))
+            port_node1_to_node2 = self.__find_port(node1_dpid, Node(l.node2))
             match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.h2)
             actions = [ofparser.OFPActionOutput(port_node1_to_node2)]
             self._add_flow(self.__datapaths[node1_dpid], self.__route_priority, match, actions)
 
             node2_dpid = self.__to_dpid(l.node2)
-            port_node2_to_node1 = self.__find_port(node2_dpid, rc.Node(l.node1))
+            port_node2_to_node1 = self.__find_port(node2_dpid, Node(l.node1))
             match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.h1)
             actions = [ofparser.OFPActionOutput(port_node2_to_node1)]
             self._add_flow(self.__datapaths[node2_dpid], self.__route_priority, match, actions)
 
         self.__route_priority += 1
 
-    def __find_port(self, dpid: int, node: rc.Node) -> Optional[int]:
+    def __find_port(self, dpid: int, node: Node) -> Optional[int]:
         for k, v in self.__port_to_node[dpid].items():
             if v == node:
                 return k
