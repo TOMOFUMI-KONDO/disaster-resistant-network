@@ -3,12 +3,16 @@ from __future__ import annotations
 from typing import Optional
 
 from components import Node, Link, Path
+from controller.enums import RoutingAlgorithm
 
 
 class RouteCalculator(object):
     INF = 10 ** 10
 
-    def __init__(self, nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
+    def __init__(self, routing_algorithm: RoutingAlgorithm = RoutingAlgorithm.DIJKSTRA,
+                 nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
+        self.__routing_algorithm = routing_algorithm,
+
         if nodes is None:
             self.__nodes = []
         else:
@@ -64,6 +68,15 @@ class RouteCalculator(object):
         self.__dst = node
 
     def calc_shortest_path(self) -> Optional[Path]:
+        if self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
+            return self.__calc_dijkstra()
+
+        if self.__routing_algorithm == RoutingAlgorithm.TAKAHIRA:
+            return self.__calc_takahira()
+
+        raise ValueError(f"Routing algorithm is invalid: {self.__routing_algorithm}")
+
+    def __calc_dijkstra(self) -> Optional[Path]:
         """
         Calculate the shortest path from src to dst by dijkstra.
 
@@ -105,6 +118,16 @@ class RouteCalculator(object):
             node = self.__find_opposite_node(link_to_node[node], node)
 
         return path
+
+    # TODO: implement
+    def __calc_takahira(self) -> Optional[Path]:
+        """
+        Calculate the path from src to dst by takahira method taking into account effect by disaster and amount of
+        backup data.
+
+        :return:
+        Path:shortest path from src to dst
+        """
 
     def __neighbors(self, node: Node) -> list[Node]:
         links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)

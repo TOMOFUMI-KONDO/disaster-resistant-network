@@ -51,15 +51,15 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             4: {1: Node("s2"), 2: Node("s3")},
         }
         self.__router = RouteCalculator(
-            [Node("s1"), Node("s2"), Node("s3"), Node("s4")],
-            [
+            nodes=[Node("s1"), Node("s2"), Node("s3"), Node("s4")],
+            links=[
                 Link("s1", "s2", self.COST_OF_MBPS[1000]),
                 Link("s1", "s3", self.COST_OF_MBPS[10]),
                 Link("s2", "s4", self.COST_OF_MBPS[100]),
                 Link("s3", "s4", self.COST_OF_MBPS[1000]),
             ],
-            Node("s1"),
-            Node("s4"),
+            src=Node("s1"),
+            dst=Node("s4"),
         )
         self.h1 = "10.0.0.1"
         self.h2 = "10.0.0.2"
