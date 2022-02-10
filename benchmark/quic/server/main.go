@@ -12,7 +12,10 @@ import (
 	"github.com/lucas-clemente/quic-go"
 )
 
-const ReadTimeout = time.Second * 10
+const (
+	ReadTimeout = time.Second * 10
+	LogInterval = 1048576 // 1MB
+)
 
 var (
 	addr    string
@@ -46,6 +49,10 @@ func main() {
 }
 
 func handleSess(sess quic.Session) {
+	defer func() {
+		fmt.Printf("total %dbyte\n", total)
+	}()
+
 	stream, err := sess.AcceptStream(context.Background())
 	if err != nil {
 		log.Println(err)
@@ -53,6 +60,7 @@ func handleSess(sess quic.Session) {
 	}
 	defer stream.Close()
 
+	var logAt int64
 	buf := make([]byte, 1024)
 	for {
 		if err = stream.SetReadDeadline(time.Now().Add(ReadTimeout)); err != nil {
@@ -67,8 +75,9 @@ func handleSess(sess quic.Session) {
 		}
 
 		total += int64(nr)
-		if verbose {
+		if verbose && total > logAt+LogInterval {
 			fmt.Printf("now %s...\n", benchmark.FormatSize(total))
+			logAt = total
 		}
 
 		if nr < len(buf) {
@@ -76,7 +85,7 @@ func handleSess(sess quic.Session) {
 		}
 	}
 
-	fmt.Printf("done!\ntotal %dbyte\n", total)
+	fmt.Printf("done!\n")
 
 	// tell received size
 	if _, err = stream.Write([]byte(fmt.Sprintf("total %s", benchmark.FormatSize(total)))); err != nil {

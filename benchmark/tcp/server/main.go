@@ -11,7 +11,10 @@ import (
 	"github.com/TOMOFUMI-KONDO/disaster-resistant-network/benchmark"
 )
 
-const ReadTimeout = time.Second * 10
+const (
+	ReadTimeout = time.Second * 10
+	LogInterval = 1048576 // 1MB
+)
 
 var (
 	addr    string
@@ -42,8 +45,12 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
+	defer func() {
+		fmt.Printf("total %dbyte\n", total)
+	}()
 	defer conn.Close()
 
+	var logAt int64
 	buf := make([]byte, 1024)
 	for {
 		if err := conn.SetReadDeadline(time.Now().Add(ReadTimeout)); err != nil {
@@ -58,8 +65,9 @@ func handleConn(conn net.Conn) {
 		}
 
 		total += int64(nr)
-		if verbose {
+		if verbose && total > logAt+LogInterval {
 			fmt.Printf("now %s...\n", benchmark.FormatSize(total))
+			logAt = total
 		}
 
 		if nr < len(buf) {
