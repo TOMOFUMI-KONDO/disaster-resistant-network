@@ -13,7 +13,11 @@ from topology.disaster_resistant_network_topo import DisasterResistantNetworkTop
 class Experiment(object):
     def __init__(self, network: Network):
         self.__network = network
+        self.__receiver = None
+        self.__sender = None
+        self.__disaster_scheduler = None
 
+    def run(self):
         self.__net = Mininet(
             topo=DisasterResistantNetworkTopo(),
             controller=RemoteController("c0", port=6633),
@@ -23,7 +27,6 @@ class Experiment(object):
 
         self.__disaster_scheduler = DisasterScheduler(self.__net.switches)
 
-    def run(self):
         self.__net.start()
 
         self.__set_stp()
