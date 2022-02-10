@@ -39,7 +39,7 @@ func main() {
 	for {
 		sess, err := listener.Accept(context.Background())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("failed to accept: %v\n", err)
 		}
 		go handleSess(sess)
 	}

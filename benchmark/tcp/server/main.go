@@ -35,7 +35,7 @@ func main() {
 	for {
 		sess, err := listener.Accept()
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("failed to accept: %v\n", err)
 		}
 		go handleConn(sess)
 	}
