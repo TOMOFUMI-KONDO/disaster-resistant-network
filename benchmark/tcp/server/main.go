@@ -16,7 +16,7 @@ const ReadTimeout = time.Second * 10
 var (
 	addr    string
 	verbose bool
-	total   int
+	total   int64
 )
 
 func init() {
@@ -57,7 +57,7 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
-		total += nr
+		total += int64(nr)
 		if verbose {
 			fmt.Printf("now %dbyte...\n", total)
 		}
