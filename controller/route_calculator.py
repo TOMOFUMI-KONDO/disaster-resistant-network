@@ -33,7 +33,8 @@ class RouteCalculator(object):
 
         self.__nodes.remove(node)
         links = self.__find_links_by_node(node)
-        [self.rm_link(l) for l in links]
+        for l in links:
+            self.rm_link(l.node1, l.node2)
 
     def get_links(self) -> list[Link]:
         return self.__links
