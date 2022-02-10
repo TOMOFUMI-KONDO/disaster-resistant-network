@@ -72,12 +72,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAd
         actions = [ofparser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
         self._add_flow(dp, 0, ofparser.OFPMatch(), actions)
 
-        # set drop action to prevent flood loop
-        # if dp.id == 3:
-        #     self._add_flow(dp, 1, OFPMatch(in_port=2), [])
-        # if dp.id == 4:
-        #     self._add_flow(dp, 1, OFPMatch(in_port=2), [])
-
     # TODO: use to create topology dynamically
     # @set_ev_cls(ofp_event.EventOFPPortDescStatsReply)
     # def desc_stats_reply_handler(self, ev):
