@@ -1,4 +1,5 @@
 from argparse import Namespace, ArgumentParser
+from time import sleep
 
 from mininet.log import setLogLevel
 
@@ -13,6 +14,7 @@ def main():
     for n in [Network.TCP, Network.QUIC]:
         experiment = Experiment(n)
         experiment.run()
+        sleep(10)
 
 
 def parse() -> Namespace:

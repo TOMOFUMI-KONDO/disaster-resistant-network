@@ -26,6 +26,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAd
 
     def __init__(self, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
+        self.__init()
+
+    def __init(self):
         self.__route_priority = 100  # this will be incremented on each routing
         self.__datapaths: dict[int, controller.Datapath] = {}  # dict[dpid, Datapath]
         self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
@@ -97,11 +100,15 @@ class DisasterResistantNetworkController(app_manager.RyuApp, flow_addable.FlowAd
             self.__router.rm_link(f"s{dpid}", opposite.name)
 
             path = self.__router.calc_shortest_path()
-            if path is None:
+            if path is not None:
+                self.__set_route_by_path(path)
+            else:
                 self.logger.info("[INFO]no path available")
-                return
 
-            self.__set_route_by_path(path)
+            # NOTE: This is temporary impl that initializes when all link is removed to run experiment in succession.
+            if len(self.__router.get_links()) == 0:
+                self.logger.info('[INFO]initialize controller')
+                self.__init()
 
     @handler.set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
