@@ -13,7 +13,7 @@ import (
 
 const (
 	ReadTimeout = time.Second * 10
-	LogInterval = 1048576 // 1MB
+	LogInterval = 1e6 // 1MB
 )
 
 var (
