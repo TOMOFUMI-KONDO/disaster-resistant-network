@@ -11,7 +11,7 @@ class RouteCalculator(object):
 
     def __init__(self, routing_algorithm: RoutingAlgorithm = RoutingAlgorithm.DIJKSTRA,
                  nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
-        self.__routing_algorithm = routing_algorithm,
+        self.__routing_algorithm = routing_algorithm
 
         if nodes is None:
             self.__nodes = []

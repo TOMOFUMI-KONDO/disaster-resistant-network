@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-import ryu.ofproto.ofproto_v1_3 as ofproto
-import ryu.ofproto.ofproto_v1_3_parser as ofparser
 from ryu.base import app_manager
 from ryu.controller import ofp_event, controller, handler
 from ryu.lib.packet import ether_types, ethernet, packet
+from ryu.ofproto import ofproto_v1_3 as ofproto
+from ryu.ofproto import ofproto_v1_3_parser as ofparser
 
 from components import Node, Path, Link
 from flow_addable import FlowAddable
