@@ -11,7 +11,7 @@ class DisasterScheduler(object):
         s = self.__switches[0]
 
         # time until disaster arrives
-        sleep(30)
+        sleep(100)
 
         # disaster arrives
         info("*** Link between s1 and s2 is being swept by tsunami...\n")
