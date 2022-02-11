@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -20,13 +21,13 @@ const (
 
 var (
 	addr   string
-	chunk  string
+	chunk  int64
 	offset int64
 )
 
 func init() {
 	flag.StringVar(&addr, "addr", "localhost:44300", "server address")
-	flag.StringVar(&chunk, "chunk", "1K.txt", "chunk file to send")
+	flag.Int64Var(&chunk, "chunk", 1e6, "size of chunk file to be sent")
 	flag.Parse()
 }
 
@@ -64,11 +65,15 @@ func main() {
 func send(stream quic.Stream, offset *int64) error {
 	defer stream.Close()
 
-	file, err := os.Open(fmt.Sprintf("chunk/%s", chunk))
+	file, err := ioutil.TempFile("", "")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer os.Remove(file.Name())
+
+	if err := file.Truncate(chunk); err != nil {
+		return err
+	}
 
 	buf := make([]byte, 1024)
 
