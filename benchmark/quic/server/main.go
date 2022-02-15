@@ -55,7 +55,7 @@ func handleSess(sess quic.Session) {
 
 	stream, err := sess.AcceptStream(context.Background())
 	if err != nil {
-		log.Println(err)
+		log.Printf("failed to accept stream: %v\n", err)
 		return
 	}
 	defer stream.Close()
