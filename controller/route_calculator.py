@@ -7,7 +7,8 @@ from enums import RoutingAlgorithm
 
 
 class RouteCalculator(object):
-    INF = 10 ** 10
+    # approximate infinite cost
+    COST_INF = 10 ** 10
 
     def __init__(self, routing_algorithm: RoutingAlgorithm = RoutingAlgorithm.DIJKSTRA,
                  nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
@@ -88,7 +89,7 @@ class RouteCalculator(object):
         costs = {self.__src: 0}
         for n in self.__nodes:
             if n != self.__src:
-                costs[n] = self.INF
+                costs[n] = self.COST_INF
 
         # update neighbors of last fixed node
         while self.__dst not in fixed_nodes:

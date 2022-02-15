@@ -9,6 +9,7 @@ from ryu.ofproto import ofproto_v1_3 as ofproto
 from ryu.ofproto import ofproto_v1_3_parser as ofparser
 
 from components import Node, Path, Link
+from enums import RoutingAlgorithm
 from flow_addable import FlowAddable
 from route_calculator import RouteCalculator
 
@@ -24,8 +25,14 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         10: 1000,
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, routing_algorithm=RoutingAlgorithm.TAKAHIRA, update_interval_sec=30, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
+
+        self.__h1 = "10.0.0.1"
+        self.__h2 = "10.0.0.2"
+        self.__routing_algorithm = routing_algorithm
+        self.__update_interval_sec = update_interval_sec
+
         self.__init()
 
     def __init(self):
@@ -50,19 +57,29 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             3: {1: Node("s1"), 2: Node("s4")},
             4: {1: Node("s2"), 2: Node("s3")},
         }
-        self.__router = RouteCalculator(
-            nodes=[Node("s1"), Node("s2"), Node("s3"), Node("s4")],
-            links=[
+        if self.__routing_algorithm == RoutingAlgorithm.TAKAHIRA:
+            links = [
                 Link("s1", "s2", self.COST_OF_MBPS[1000]),
                 Link("s1", "s3", self.COST_OF_MBPS[10]),
                 Link("s2", "s4", self.COST_OF_MBPS[100]),
                 Link("s3", "s4", self.COST_OF_MBPS[1000]),
-            ],
+            ]
+        elif self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
+            links = [
+                Link("s1", "s2"),
+                Link("s1", "s3"),
+                Link("s2", "s4"),
+                Link("s3", "s4"),
+            ]
+        else:
+            raise ValueError(f"self.__routing_algorithm is invalid: {self.__routing_algorithm}")
+
+        self.__router = RouteCalculator(
+            nodes=[Node("s1"), Node("s2"), Node("s3"), Node("s4")],
+            links=links,
             src=Node("s1"),
             dst=Node("s4"),
         )
-        self.h1 = "10.0.0.1"
-        self.h2 = "10.0.0.2"
 
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -171,13 +188,13 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         for l in path.links:
             node1_dpid = self.__to_dpid(l.node1)
             port_node1_to_node2 = self.__find_port(node1_dpid, Node(l.node2))
-            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.h2)
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__h2)
             actions = [ofparser.OFPActionOutput(port_node1_to_node2)]
             self._add_flow(self.__datapaths[node1_dpid], self.__route_priority, match, actions)
 
             node2_dpid = self.__to_dpid(l.node2)
             port_node2_to_node1 = self.__find_port(node2_dpid, Node(l.node1))
-            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.h1)
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__h1)
             actions = [ofparser.OFPActionOutput(port_node2_to_node1)]
             self._add_flow(self.__datapaths[node2_dpid], self.__route_priority, match, actions)
 

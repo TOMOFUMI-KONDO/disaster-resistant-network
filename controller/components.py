@@ -20,7 +20,8 @@ class Node(object):
 
 
 class Link(object):
-    def __init__(self, node1: str, node2: str, cost: int):
+    # cost must be greater or equal to 0.  -1 means that cost is not  determined.
+    def __init__(self, node1: str, node2: str, cost: int = -1):
         self.node1 = node1
         self.node2 = node2
         self.cost = cost
