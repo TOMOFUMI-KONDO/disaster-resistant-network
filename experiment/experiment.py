@@ -5,9 +5,9 @@ from mininet.log import info
 from mininet.net import Mininet
 from mininet.node import RemoteController
 
-from disaster_scheduler.disaster_scheduler import DisasterScheduler
-from experiment.enums import Network
-from topology.disaster_resistant_network_topo import DisasterResistantNetworkTopo
+from disaster_resistant_network_topo import DisasterResistantNetworkTopo
+from disaster_scheduler import DisasterScheduler
+from enums import Network
 
 
 class Experiment(object):

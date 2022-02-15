@@ -2,8 +2,8 @@ from argparse import Namespace, ArgumentParser
 
 from mininet.log import setLogLevel
 
-from experiment.enums import Network
-from experiment.experiment import Experiment
+from enums import Network
+from experiment import Experiment
 
 
 def main():
