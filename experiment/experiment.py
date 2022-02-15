@@ -11,8 +11,9 @@ from enums import Network
 
 
 class Experiment(object):
-    def __init__(self, network: Network):
+    def __init__(self, network: Network, chunk: int):
         self.__network = network
+        self.__chunk = chunk
         self.__net = Mininet(
             topo=DisasterResistantNetworkTopo(),
             controller=RemoteController("c0", port=6633),
@@ -55,7 +56,7 @@ class Experiment(object):
     def __start_backup(self):
         info("*** Disaster was predicted and start emergency backup!\n")
         network_name = self.__network_name()
-        self.__sender.cmd(f"./bin/{network_name}/client -addr {self.__receiver.IP()}:44300 -chunk 1000000000 "
+        self.__sender.cmd(f"./bin/{network_name}/client -addr {self.__receiver.IP()}:44300 -chunk {self.__chunk} "
                           f"> log/client_{network_name}.log 2>&1 &")
 
     def __network_name(self) -> str:
