@@ -14,12 +14,14 @@ class Experiment(object):
     def __init__(self, network: Network, chunk: int):
         self.__network = network
         self.__chunk = chunk
+
         self.__net = Mininet(
             topo=DisasterResistantNetworkTopo(),
             controller=RemoteController("c0", port=6633),
         )
         hosts = self.__net.hosts
         self.__receiver, self.__sender = hosts[0], hosts[1]
+
         self.__disaster_scheduler = DisasterScheduler(self.__net.switches)
 
     def run(self):
