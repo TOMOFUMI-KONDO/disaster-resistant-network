@@ -27,7 +27,7 @@ class RouteCalculator(object):
         self.__src = src
         self.__dst = dst
 
-    def get_nodes(self) -> list[Node]:
+    def nodes(self) -> list[Node]:
         return self.__nodes
 
     def add_node(self, node: Node):
@@ -43,7 +43,7 @@ class RouteCalculator(object):
         for l in links:
             self.rm_link(l.node1, l.node2)
 
-    def get_links(self) -> list[Link]:
+    def links(self) -> list[Link]:
         return self.__links
 
     def add_link(self, link: Link):
@@ -56,10 +56,10 @@ class RouteCalculator(object):
 
         self.__links.remove(link)
 
-    def get_src(self) -> Node:
+    def src(self) -> Node:
         return self.__src
 
-    def get_dst(self) -> Node:
+    def dst(self) -> Node:
         return self.__dst
 
     def set_src(self, node: Node):
