@@ -50,7 +50,7 @@ func main() {
 
 func handleSess(sess quic.Session) {
 	defer func() {
-		fmt.Printf("total %dbyte\n", total)
+		fmt.Printf("total %s\n", benchmark.FormatSize(total))
 	}()
 
 	stream, err := sess.AcceptStream(context.Background())

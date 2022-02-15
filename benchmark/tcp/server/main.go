@@ -46,7 +46,7 @@ func main() {
 
 func handleConn(conn net.Conn) {
 	defer func() {
-		fmt.Printf("total %dbyte\n", total)
+		fmt.Printf("total %s\n", benchmark.FormatSize(total))
 	}()
 	defer conn.Close()
 
@@ -75,7 +75,7 @@ func handleConn(conn net.Conn) {
 		}
 	}
 
-	fmt.Printf("done!\ntotal %dbyte\n", total)
+	fmt.Printf("done!\n")
 
 	// tell received size
 	if _, err := conn.Write([]byte(fmt.Sprintf("total %s", benchmark.FormatSize(total)))); err != nil {
