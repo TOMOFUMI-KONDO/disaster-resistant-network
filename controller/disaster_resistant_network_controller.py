@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import warnings
 from typing import Optional
 
 from ryu.base import app_manager
@@ -28,12 +30,14 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     def __init__(self, routing_algorithm=RoutingAlgorithm.TAKAHIRA, update_interval_sec=30, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
 
+        self.__topo_updated = False
         self.__h1 = "10.0.0.1"
         self.__h2 = "10.0.0.2"
         self.__routing_algorithm = routing_algorithm
         self.__update_interval_sec = update_interval_sec
 
         self.__init()
+        self.__update_path()
 
     def __init(self):
         self.__route_priority = 100  # this will be incremented on each routing
@@ -81,6 +85,27 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             dst=Node("s4"),
         )
 
+    def __update_path(self):
+        """
+        TODO: should listen notification telling occurrence of disaster from outside
+        """
+        warnings.warn("deprecated", DeprecationWarning)
+
+        t = threading.Timer(self.__update_interval_sec, self.__update_path)
+        t.start()
+
+        if not self.__topo_updated:
+            return
+        self.__topo_updated = False
+
+        path = self.__router.calc_shortest_path()
+        if path is not None:
+            self.logger.info("[INFO]updated path")
+            self.__set_route_by_path(path)
+        else:
+            self.logger.info("[INFO]no path available")
+            return
+
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         dp: controller.Datapath = ev.msg.datapath
@@ -116,17 +141,14 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             opposite = self.__port_to_node[dpid].pop(port_no)
             self.__router.rm_link(f"s{dpid}", opposite.name)
 
-            path = self.__router.calc_shortest_path()
-            if path is not None:
-                self.__set_route_by_path(path)
-            else:
-                self.logger.info("[INFO]no path available")
-
             # NOTE: This is temporary impl that initializes when all link is removed to run experiment in succession.
             num_link = [len(x.keys()) for x in self.__port_to_node.values()]
             if num_link == 0:
                 self.logger.info('[INFO]initialize controller')
                 self.__init()
+                return
+
+            self.__topo_updated = True
 
     @handler.set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
