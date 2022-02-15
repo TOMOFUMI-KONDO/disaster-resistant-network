@@ -63,17 +63,17 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         }
         if self.__routing_algorithm == RoutingAlgorithm.TAKAHIRA:
             links = [
-                Link("s1", "s2", self.COST_OF_MBPS[1000]),
-                Link("s1", "s3", self.COST_OF_MBPS[10]),
-                Link("s2", "s4", self.COST_OF_MBPS[100]),
-                Link("s3", "s4", self.COST_OF_MBPS[1000]),
+                Link("s1", "s2", self.COST_OF_MBPS[1000], 100),
+                Link("s1", "s3", self.COST_OF_MBPS[10], -1),
+                Link("s2", "s4", self.COST_OF_MBPS[100], -1),
+                Link("s3", "s4", self.COST_OF_MBPS[1000], 220),
             ]
         elif self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
             links = [
-                Link("s1", "s2"),
-                Link("s1", "s3"),
-                Link("s2", "s4"),
-                Link("s3", "s4"),
+                Link("s1", "s2", self.COST_OF_MBPS[1000], 100),
+                Link("s1", "s3", self.COST_OF_MBPS[10], -1),
+                Link("s2", "s4", self.COST_OF_MBPS[100], -1),
+                Link("s3", "s4", self.COST_OF_MBPS[1000], 220),
             ]
         else:
             raise ValueError(f"self.__routing_algorithm is invalid: {self.__routing_algorithm}")

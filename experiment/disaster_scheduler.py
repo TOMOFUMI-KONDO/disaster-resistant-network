@@ -1,4 +1,6 @@
-from time import sleep
+from __future__ import annotations
+
+import threading
 
 from mininet.log import info
 
@@ -7,18 +9,22 @@ class DisasterScheduler(object):
     def __init__(self, switches):
         self.__switches = switches
 
-    def run(self):
+    def run(self, failures: list[Failure]):
+        for f in failures:
+            t = threading.Timer(f.fail_at_sec, lambda: self.__fail(f))
+            t.start()
+
+    def __fail(self, failure: Failure):
         s = self.__switches[0]
+        info(f"*** Link between {failure.node1} and {failure.node2} failed")
+        s.cmd(f"ovs-vsctl del-port {failure.node1}-eth{failure.port_node1}")
+        s.cmd(f"ovs-vsctl del-port {failure.node2}-eth{failure.port_node2}")
 
-        # time until disaster arrives
-        sleep(100)
 
-        # disaster arrives
-        info("*** Link between s1 and s2 is being swept by tsunami...\n")
-        s.cmd("ovs-vsctl del-port s1-eth1")
-        s.cmd("ovs-vsctl del-port s2-eth1")
-
-        sleep(120)
-        info("*** Link between s3 and s4 is being swept by tsunami...\n")
-        s.cmd("ovs-vsctl del-port s3-eth2")
-        s.cmd("ovs-vsctl del-port s4-eth2")
+class Failure(object):
+    def __init__(self, node1: str, port_node1: int, node2: str, port_node2: int, fail_at_sec: int):
+        self.node1 = node1
+        self.node2 = node2
+        self.port_node1 = port_node1
+        self.port_node2 = port_node2
+        self.fail_at_sec = fail_at_sec

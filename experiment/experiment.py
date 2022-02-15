@@ -6,7 +6,7 @@ from mininet.net import Mininet
 from mininet.node import RemoteController
 
 from disaster_resistant_network_topo import DisasterResistantNetworkTopo
-from disaster_scheduler import DisasterScheduler
+from disaster_scheduler import DisasterScheduler, Failure
 from enums import Network
 
 
@@ -33,7 +33,10 @@ class Experiment(object):
 
         # assume that disaster was detected
         self.__start_backup()
-        self.__disaster_scheduler.run()
+        self.__disaster_scheduler.run([
+            Failure("s1", 1, "s2", 1, 100),
+            Failure("s3", 2, "s4", 2, 220)
+        ])
 
         CLI(self.__net)
 

@@ -20,11 +20,17 @@ class Node(object):
 
 
 class Link(object):
-    # cost must be greater or equal to 0.  -1 means that cost is not  determined.
-    def __init__(self, node1: str, node2: str, cost: int = -1):
+    def __init__(self, node1: str, node2: str, cost: int = -1, fail_at_sec: int = -1):
+        """
+        :param node1: name of first node
+        :param node2: name of second node
+        :param cost: must be greater or equal to 0.  -1 means that cost has not been determined yet.
+        :param fail_at_sec: must be greater or equal to 0. -1 means that fail_at_sec has not been determined yet.
+        """
         self.node1 = node1
         self.node2 = node2
         self.cost = cost
+        self.fail_at_sec = fail_at_sec
 
     def __repr__(self):
         cls = type(self)
