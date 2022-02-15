@@ -55,7 +55,7 @@ class Experiment(object):
     def __start_backup(self):
         info("*** Disaster was predicted and start emergency backup!\n")
         network_name = self.__network_name()
-        self.__sender.cmd(f"./bin/{network_name}/client -addr {self.__receiver.IP()}:44300 -chunk 1G.txt "
+        self.__sender.cmd(f"./bin/{network_name}/client -addr {self.__receiver.IP()}:44300 -chunk 1000000000 "
                           f"> log/client_{network_name}.log 2>&1 &")
 
     def __network_name(self) -> str:
