@@ -4,21 +4,30 @@ import (
 	"fmt"
 )
 
+const (
+	K int64 = 1e3
+	M int64 = 1e6
+	G int64 = 1e9
+)
+
 func FormatSize(size int64) string {
-	var k int64 = 1e3
-	if size < k {
+	if size < K {
 		return fmt.Sprintf("%dB", size)
 	}
 
-	var m int64 = 1e6
-	if size < m {
-		return fmt.Sprintf("%dKB", size/k)
+	if size < M {
+		k := size / K
+		return fmt.Sprintf("%dKB %dB", k, size-k*K)
 	}
 
-	var g int64 = 1e9
-	if size < g {
-		return fmt.Sprintf("%dMB", size/m)
+	if size < G {
+		m := size / M
+		k := (size - m*M) / K
+		return fmt.Sprintf("%dMB %dKB %dB", m, k, size-m*M-k*K)
 	}
 
-	return fmt.Sprintf("%dGB", size/g)
+	g := size / G
+	m := (size - g*G) / M
+	k := (size - g*G - m*M) / K
+	return fmt.Sprintf("%dGB %dMB %dKB %dB", g, m, k, size-g*G-m*M-k*K)
 }
