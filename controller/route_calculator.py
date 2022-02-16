@@ -123,7 +123,7 @@ class RouteCalculator(object):
         :return:
         Path:shortest path from src to dst
         """
-        if nth_update < 1:
+        if nth_update < 0:
             raise ValueError(f"nth_update must be greater than 0, got {nth_update}")
         if update_interval_sec < 1:
             raise ValueError(f"update_interval_sec must be greater than 0, got {update_interval_sec}")
