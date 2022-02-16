@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-class Node(object):
+class Switch(object):
     def __init__(self, name: str):
         self.name = name
 
@@ -12,23 +12,23 @@ class Node(object):
     def __hash__(self):
         return hash(self.name)
 
-    def __eq__(self, other: Node):
+    def __eq__(self, other: Switch):
         return self.name == other.name
 
-    def __ne__(self, other: Node):
+    def __ne__(self, other: Switch):
         return not self == other
 
 
 class Link(object):
-    def __init__(self, node1: str, node2: str, bandwidth: int = -1, fail_at_sec: int = -1):
+    def __init__(self, switch1: str, switch2: str, bandwidth: int = -1, fail_at_sec: int = -1):
         """
-        :param node1: name of first node
-        :param node2: name of second node
+        :param switch1: name of switch on one side
+        :param switch2: name of switch on the other side
         :param bandwidth: must be greater than 0.
         :param fail_at_sec: must be greater or equal to 0. -1 means that fail_at_sec has not been determined yet.
         """
-        self.node1 = node1
-        self.node2 = node2
+        self.switch1 = switch1
+        self.switch2 = switch2
         self.bandwidth = bandwidth
         self.fail_at_sec = fail_at_sec
 
@@ -38,14 +38,14 @@ class Link(object):
 
     def __repr__(self):
         cls = type(self)
-        return f"{self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+        return f"{self.switch1}---{self.switch2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
     def __hash__(self):
-        return hash(f"{self.node1}-{self.node2}")
+        return hash(f"{self.switch1}-{self.switch2}")
 
     def __eq__(self, other: Link):
-        return (self.node1 == other.node1 and self.node2 == other.node2) or \
-               (self.node1 == other.node2 and self.node2 == other.node1)
+        return (self.switch1 == other.switch1 and self.switch2 == other.switch2) or \
+               (self.switch1 == other.switch2 and self.switch2 == other.switch1)
 
     def __ne__(self, other: Link):
         return not self == other

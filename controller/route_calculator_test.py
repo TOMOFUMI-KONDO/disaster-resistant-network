@@ -1,6 +1,6 @@
 import unittest
 
-from route_calculator import RouteCalculator, Node, Link
+from route_calculator import RouteCalculator, Switch, Link
 
 
 # FIXME: follow RouteCalculator implementation
@@ -9,8 +9,8 @@ class RouteCalculatorTest(unittest.TestCase):
         """
         n1(src) --1-- n2(dst)
         """
-        src = Node("n1")
-        dst = Node("n2")
+        src = Switch("n1")
+        dst = Switch("n2")
         links = [Link(src.name, dst.name, 1)]
 
         router = RouteCalculator([src, dst], links, src, dst)
@@ -35,7 +35,7 @@ class RouteCalculatorTest(unittest.TestCase):
          |      \  |  /      |  /      |
         n13 --3-- n14 --2-- n15 --4-- n16
         """
-        nodes = [Node(f"n{i}") for i in range(1, 17)]
+        switches = [Switch(f"n{i}") for i in range(1, 17)]
         links = [
             Link("n1", "n2", 2),
             Link("n1", "n5", 3),
@@ -72,7 +72,7 @@ class RouteCalculatorTest(unittest.TestCase):
             Link("n15", "n16", 4),
         ]
 
-        router = RouteCalculator(nodes, links, Node("n13"), Node("n4"))
+        router = RouteCalculator(switches, links, Switch("n13"), Switch("n4"))
         path = router.calc_shortest_path()
         self.assertIsNotNone(path)
         self.assertListEqual(path.links, [
@@ -82,7 +82,7 @@ class RouteCalculatorTest(unittest.TestCase):
             links[5],
         ])
 
-        router.set_dst(Node("n16"))
+        router.set_dst(Switch("n16"))
         path = router.calc_shortest_path()
         self.assertIsNotNone(path)
         self.assertListEqual(path.links, [

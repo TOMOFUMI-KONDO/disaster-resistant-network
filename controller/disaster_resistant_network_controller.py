@@ -11,7 +11,7 @@ from ryu.lib.packet import ether_types, ethernet, packet
 from ryu.ofproto import ofproto_v1_3 as ofproto
 from ryu.ofproto import ofproto_v1_3_parser as ofparser
 
-from components import Node, Path, Link
+from components import Switch, Path, Link
 from enums import RoutingAlgorithm
 from flow_addable import FlowAddable
 from route_calculator import RouteCalculator
@@ -52,12 +52,12 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
                        |           |
         h2-server --- s3 --(1G)-- s4 --- h1-client
         """
-        # dict[dpid, dict[port, Node]]
-        self.__port_to_node: dict[int, dict[int, Node]] = {
-            1: {1: Node("s2"), 2: Node("s3")},
-            2: {1: Node("s1"), 2: Node("s4")},
-            3: {1: Node("s1"), 2: Node("s4")},
-            4: {1: Node("s2"), 2: Node("s3")},
+        # dict[dpid, dict[port, Switch]]
+        self.__port_to_switch: dict[int, dict[int, Switch]] = {
+            1: {1: Switch("s2"), 2: Switch("s3")},
+            2: {1: Switch("s1"), 2: Switch("s4")},
+            3: {1: Switch("s1"), 2: Switch("s4")},
+            4: {1: Switch("s2"), 2: Switch("s3")},
         }
         links = [
             Link("s1", "s2", 1000, 100),
@@ -68,10 +68,10 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
         self.__router = RouteCalculator(
             routing_algorithm=self.__ROUTING_ALGORITHM,
-            nodes=[Node("s1"), Node("s2"), Node("s3"), Node("s4")],
+            switches=[Switch("s1"), Switch("s2"), Switch("s3"), Switch("s4")],
             links=links,
-            src=Node("s1"),
-            dst=Node("s4"),
+            src=Switch("s1"),
+            dst=Switch("s4"),
             datasize_gb=20
         )
 
@@ -125,12 +125,12 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
         self.logger.info("[INFO]PortStatus reason:%d datapath:%s port:%d", msg.reason, dpid, port_no)
 
-        if msg.reason == ofproto.OFPPR_DELETE and self.__port_to_node[dpid].get(port_no) is not None:
-            opposite = self.__port_to_node[dpid].pop(port_no)
+        if msg.reason == ofproto.OFPPR_DELETE and self.__port_to_switch[dpid].get(port_no) is not None:
+            opposite = self.__port_to_switch[dpid].pop(port_no)
             self.__router.rm_link(f"s{dpid}", opposite.name)
 
             # NOTE: This is temporary impl that initializes when all link is removed to run experiment in succession.
-            num_link = [len(x.keys()) for x in self.__port_to_node.values()]
+            num_link = [len(x.keys()) for x in self.__port_to_switch.values()]
             if num_link == 0:
                 self.logger.info('[INFO]initialize controller')
                 self.__init()
@@ -192,23 +192,23 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __set_route_by_path(self, path: Path):
         for l in path.links:
-            node1_dpid = self.__to_dpid(l.node1)
-            port_node1_to_node2 = self.__find_port(node1_dpid, Node(l.node2))
+            switch1_dpid = self.__to_dpid(l.switch1)
+            port_switch1_to_switch2 = self.__find_port(switch1_dpid, Switch(l.switch2))
             match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__h2)
-            actions = [ofparser.OFPActionOutput(port_node1_to_node2)]
-            self._add_flow(self.__datapaths[node1_dpid], self.__route_priority, match, actions)
+            actions = [ofparser.OFPActionOutput(port_switch1_to_switch2)]
+            self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority, match, actions)
 
-            node2_dpid = self.__to_dpid(l.node2)
-            port_node2_to_node1 = self.__find_port(node2_dpid, Node(l.node1))
+            switch2_dpid = self.__to_dpid(l.switch2)
+            port_switch2_to_switch1 = self.__find_port(switch2_dpid, Switch(l.switch1))
             match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__h1)
-            actions = [ofparser.OFPActionOutput(port_node2_to_node1)]
-            self._add_flow(self.__datapaths[node2_dpid], self.__route_priority, match, actions)
+            actions = [ofparser.OFPActionOutput(port_switch2_to_switch1)]
+            self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority, match, actions)
 
         self.__route_priority += 1
 
-    def __find_port(self, dpid: int, node: Node) -> Optional[int]:
-        for k, v in self.__port_to_node[dpid].items():
-            if v == node:
+    def __find_port(self, dpid: int, switch: Switch) -> Optional[int]:
+        for k, v in self.__port_to_switch[dpid].items():
+            if v == switch:
                 return k
 
     def __to_dpid(self, switch_name: str) -> int:
