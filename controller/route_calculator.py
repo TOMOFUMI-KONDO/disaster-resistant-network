@@ -136,15 +136,17 @@ class RouteCalculator(object):
 
         elapsed_sec = nth_update * update_interval_sec
         next_elapsed_sec = elapsed_sec + update_interval_sec
-        link_to_ope_ratio: dict[Link, float] = {}
+
+        expected_bandwidth: dict[Link, float] = {}
         for l in self.__links:
             if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:
-                link_to_ope_ratio[l] = 1
+                ope_ratio = 1
             elif elapsed_sec <= l.fail_at_sec < next_elapsed_sec:
-                link_to_ope_ratio[l] = (l.fail_at_sec - elapsed_sec) / update_interval_sec
+                ope_ratio = (l.fail_at_sec - elapsed_sec) / update_interval_sec
             else:
-                link_to_ope_ratio[l] = 0
-        print(link_to_ope_ratio)
+                ope_ratio = 0
+
+            expected_bandwidth[l] = ope_ratio * l.bandwidth
 
     def __neighbors(self, node: Node) -> list[Node]:
         links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)
