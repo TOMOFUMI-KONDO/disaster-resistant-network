@@ -1,23 +1,7 @@
 from __future__ import annotations
 
 
-class HostClient(object):
-    def __init__(self, name: str, neighbor_switch: str, datasize_gb: int):
-        """
-        :param name: name of host
-        :param neighbor_switch: name of switch that is connected to this host
-        :param datasize_gb: size(GB) of data that is backed up.
-        """
-        self.name = name
-        self.neighbor_switch = neighbor_switch
-        self.datasize_gb = datasize_gb
-
-    def __repr__(self):
-        cls = type(self)
-        return f"{self.name} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
-
-
-class HostServer(object):
+class Host(object):
     def __init__(self, name: str, neighbor_switch: str):
         """
         :param name: name of host
@@ -25,6 +9,30 @@ class HostServer(object):
         """
         self.name = name
         self.neighbor_switch = neighbor_switch
+
+
+class HostClient(Host):
+    def __init__(self, name: str, neighbor_switch: str, fail_at_sec: int, datasize_gb: int):
+        """
+        :param fail_at_sec: this host will fail after this time has elapsed. must be greater than or equal to 0.
+            -1 means that fail_at_sec is unknown
+        :param datasize_gb: size(GB) of data that is backed up.
+        """
+        super(HostClient, self).__init__(name, neighbor_switch)
+        self.fail_at_sec = fail_at_sec
+        self.datasize_gb = datasize_gb
+
+    def __repr__(self):
+        cls = type(self)
+        return f"{self.name} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+
+    def __hash__(self):
+        return hash(self.name)
+
+
+class HostServer(Host):
+    def __init__(self, name: str, neighbor_switch: str):
+        super(HostServer, self).__init__(name, neighbor_switch)
 
 
 class Switch(object):
@@ -46,21 +54,22 @@ class Switch(object):
 
 
 class Link(object):
-    def __init__(self, switch1: str, switch2: str, bandwidth: int = -1, fail_at_sec: int = -1):
+    def __init__(self, switch1: str, switch2: str, bandwidth_gbps: float = -1, fail_at_sec: int = -1):
         """
         :param switch1: name of switch on one side
         :param switch2: name of switch on the other side
-        :param bandwidth: must be greater than 0.
-        :param fail_at_sec: must be greater or equal to 0. -1 means that fail_at_sec has not been determined yet.
+        :param bandwidth_gbps: bandwidth(Gbps). this must be greater than 0.
+        :param fail_at_sec: this link will fail after fail_at_sec elapsed. fail_at_sec must be greater or equal to 0.
+            -1 means that fail_at_sec has not been determined yet.
         """
         self.switch1 = switch1
         self.switch2 = switch2
-        self.bandwidth = bandwidth
+        self.bandwidth_gbps = bandwidth_gbps
         self.fail_at_sec = fail_at_sec
 
     # faster bps, lower cost
     def cost(self):
-        return 10000 // self.bandwidth
+        return 10 // self.bandwidth_gbps
 
     def __repr__(self):
         cls = type(self)

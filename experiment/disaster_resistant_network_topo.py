@@ -33,7 +33,7 @@ class DisasterResistantNetworkTopo(Topo):
         #             bottom = switches[size * (i + 1) + j]
         #             self.addLink(current, bottom)
         switches = [self.addSwitch(f"s{i}", dpid=str(i)) for i in range(1, 5)]
-        self.addLink(switches[0], switches[1], cls=TCLink, bw=1000)
+        self.addLink(switches[0], switches[1], cls=TCLink, bw=1000)  # bandwidth is specified with Mbps
         self.addLink(switches[0], switches[2], cls=TCLink, bw=10)
         self.addLink(switches[1], switches[3], cls=TCLink, bw=100)
         self.addLink(switches[2], switches[3], cls=TCLink, bw=1000)

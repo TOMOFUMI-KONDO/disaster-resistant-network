@@ -6,7 +6,7 @@ from mininet.net import Mininet
 from mininet.node import RemoteController
 
 from disaster_resistant_network_topo import DisasterResistantNetworkTopo
-from disaster_scheduler import DisasterScheduler, Failure
+from disaster_scheduler import DisasterScheduler, LinkFailure, HostFailure
 from enums import Network
 
 
@@ -34,11 +34,12 @@ class Experiment(object):
         # assume that a disaster was detected
         self.__start_backup()
         self.__disaster_scheduler.run([
-            Failure("s1", 1, "s2", 1, 100),
-            Failure("s3", 2, "s4", 2, 220)
+            LinkFailure("s1", 1, "s2", 1, 100),
+            HostFailure("h1-c", "s4", 3, 220),
+            HostFailure("h2-c", "s2", 3, 400),
         ])
 
-        sleep(250)
+        sleep(450)
 
         self.__net.stop()
 

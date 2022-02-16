@@ -132,7 +132,7 @@ class RouteCalculator(object):
         next_elapsed_sec = elapsed_sec + update_interval_sec
 
         # calculate disaster effect
-        expected_bandwidth: dict[Link, float] = {}
+        expected_bandwidth_gbps: dict[Link, float] = {}
         for l in self.__links:
             if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:
                 ope_ratio = 1
@@ -141,9 +141,13 @@ class RouteCalculator(object):
             else:
                 ope_ratio = 0
 
-            expected_bandwidth[l] = ope_ratio * l.bandwidth
+            expected_bandwidth_gbps[l] = ope_ratio * l.bandwidth_gbps
 
         #  calculate data size of each host
+        requested_bandwidth_gbps: dict[HostClient: float] = {}
+        for hp in self.__host_pairs:
+            client = hp[0]
+            requested_bandwidth_gbps[client] = client.datasize_gb / client.fail_at_sec
 
     def __neighbors(self, switch: Switch) -> list[Switch]:
         links = filter(lambda x: switch.name in [x.switch1, x.switch2], self.__links)
