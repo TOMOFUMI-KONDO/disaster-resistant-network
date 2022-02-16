@@ -129,7 +129,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             self.__router.rm_link(f"s{dpid}", opposite.name)
 
             # NOTE: This is temporary impl that initializes when all link is removed to run experiment in succession.
-            num_link = [len(x.keys()) for x in self.__port_to_switch.values()]
+            num_link = 0
+            for pts in self.__port_to_switch.values():
+                num_link += len(pts.keys())
             if num_link == 0:
                 self.logger.info('[INFO]initialize controller')
                 self.__init()
