@@ -46,11 +46,11 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         """
         Topology is like below. (size = 2)
 
-        h1-server --- s1 --(1G)-- s2 --- h2-client
-                       |           |
-                     (10M)       (100M)
-                       |           |
-        h2-server --- s3 --(1G)-- s4 --- h1-client
+        h1-s --- s1 --(1G)-- s2 --- h2-c
+                  |           |
+                (10M)       (100M)
+                  |           |
+        h2-s --- s3 --(1G)-- s4 --- h1-c
         """
         # dict[dpid, dict[port, Switch]]
         self.__port_to_switch: dict[int, dict[int, Switch]] = {

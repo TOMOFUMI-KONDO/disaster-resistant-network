@@ -8,9 +8,9 @@ class DisasterResistantNetworkTopo(Topo):
         Topology is like below. (size = 2)
 
         h1-s --- s1 --(1G)-- s2 --- h2-c
-                       |           |
-                     (10M)       (100M)
-                       |           |
+                  |           |
+                (10M)       (100M)
+                  |           |
         h2-s --- s3 --(1G)-- s4 --- h1-c
         """
         # TODO: create any given size topology
