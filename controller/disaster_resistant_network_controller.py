@@ -86,8 +86,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__update_path()
 
     def __update_path(self):
-        self.__update_times += 1
-
         path = self.__router.calc_shortest_path(self.__update_times, self.__UPDATE_INTERVAL_SEC)
         if path is None:
             self.logger.info("[INFO]no path available")
@@ -95,6 +93,8 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
         self.logger.info("[INFO]updated path")
         self.__set_route_by_path(path)
+
+        self.__update_times += 1
 
         # update path every self.__update_interval_sec
         t = threading.Timer(self.__UPDATE_INTERVAL_SEC, self.__update_path)
