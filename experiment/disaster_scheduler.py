@@ -11,7 +11,7 @@ class DisasterScheduler(object):
 
     def run(self, failures: list[Failure]):
         for f in failures:
-            t = threading.Timer(f.fail_at_sec, lambda: self.__fail(f))
+            t = threading.Timer(f.fail_at_sec, lambda x: self.__fail(x), [f])
             t.start()
 
     def __fail(self, failure: Failure):

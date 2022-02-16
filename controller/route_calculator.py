@@ -68,12 +68,12 @@ class RouteCalculator(object):
     def set_dst(self, node: Node):
         self.__dst = node
 
-    def calc_shortest_path(self) -> Optional[Path]:
+    def calc_shortest_path(self, nth_update: int = 0, update_interval_sec: int = 0) -> Optional[Path]:
         if self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
             return self.__calc_dijkstra()
 
         if self.__routing_algorithm == RoutingAlgorithm.TAKAHIRA:
-            return self.__calc_takahira()
+            return self.__calc_takahira(nth_update, update_interval_sec)
 
         raise ValueError(f"Routing algorithm is invalid: {self.__routing_algorithm}")
 
@@ -121,7 +121,7 @@ class RouteCalculator(object):
         return path
 
     # TODO: implement
-    def __calc_takahira(self) -> Optional[Path]:
+    def __calc_takahira(self, nth_update: int, update_interval_sec: int) -> Optional[Path]:
         """
         Calculate the path from src to dst by takahira method taking into account effect by disaster and amount of
         backup data.
@@ -129,6 +129,23 @@ class RouteCalculator(object):
         :return:
         Path:shortest path from src to dst
         """
+        print(nth_update)
+        if nth_update < 1:
+            raise ValueError(f"nth_update must be greater than 0, got {nth_update}")
+        if update_interval_sec < 1:
+            raise ValueError(f"update_interval_sec must be greater than 0, got {update_interval_sec}")
+
+        elapsed_sec = nth_update * update_interval_sec
+        next_elapsed_sec = elapsed_sec + update_interval_sec
+        link_to_ope_ratio: dict[Link, float] = {}
+        for l in self.__links:
+            if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:
+                link_to_ope_ratio[l] = 1
+            elif elapsed_sec <= l.fail_at_sec < next_elapsed_sec:
+                link_to_ope_ratio[l] = (l.fail_at_sec - elapsed_sec) / update_interval_sec
+            else:
+                link_to_ope_ratio[l] = 0
+        print(link_to_ope_ratio)
 
     def __neighbors(self, node: Node) -> list[Node]:
         links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)

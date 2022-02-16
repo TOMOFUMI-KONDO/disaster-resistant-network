@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import threading
-import warnings
 from typing import Optional
 
 import webob
@@ -19,32 +18,31 @@ from route_calculator import RouteCalculator
 
 
 class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
-    _CONTEXTS = {'wsgi': wsgi.WSGIApplication}
-    APP_INSTANCE_NAME = 'disaster_resistant_network_app'
     OFP_VERSIONS = [ofproto.OFP_VERSION]
 
+    _CONTEXTS = {'wsgi': wsgi.WSGIApplication}
+    APP_INSTANCE_NAME = 'disaster_resistant_network_app'
+
     # faster bps, lower cost
-    COST_OF_MBPS = {
+    __COST_OF_MBPS = {
         10000: 1,
         1000: 10,
         100: 100,
         10: 1000,
     }
+    __ROUTING_ALGORITHM = RoutingAlgorithm.TAKAHIRA
+    __UPDATE_INTERVAL_SEC = 30
 
-    def __init__(self, routing_algorithm=RoutingAlgorithm.TAKAHIRA, update_interval_sec=30, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
 
-        wsgi = kwargs['wsgi']
-        wsgi.register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
+        kwargs['wsgi'].register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
 
-        self.__topo_updated = False
         self.__h1 = "10.0.0.1"
         self.__h2 = "10.0.0.2"
-        self.__routing_algorithm = routing_algorithm
-        self.__update_interval_sec = update_interval_sec
+        self.__update_times = 0
 
         self.__init()
-        self.__update_path()
 
     def __init(self):
         self.__route_priority = 100  # this will be incremented on each routing
@@ -68,53 +66,39 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             3: {1: Node("s1"), 2: Node("s4")},
             4: {1: Node("s2"), 2: Node("s3")},
         }
-        if self.__routing_algorithm == RoutingAlgorithm.TAKAHIRA:
-            links = [
-                Link("s1", "s2", self.COST_OF_MBPS[1000], 100),
-                Link("s1", "s3", self.COST_OF_MBPS[10], -1),
-                Link("s2", "s4", self.COST_OF_MBPS[100], -1),
-                Link("s3", "s4", self.COST_OF_MBPS[1000], 220),
-            ]
-        elif self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
-            links = [
-                Link("s1", "s2", self.COST_OF_MBPS[1000], 100),
-                Link("s1", "s3", self.COST_OF_MBPS[10], -1),
-                Link("s2", "s4", self.COST_OF_MBPS[100], -1),
-                Link("s3", "s4", self.COST_OF_MBPS[1000], 220),
-            ]
-        else:
-            raise ValueError(f"self.__routing_algorithm is invalid: {self.__routing_algorithm}")
+        links = [
+            Link("s1", "s2", self.__COST_OF_MBPS[1000], 100),
+            Link("s1", "s3", self.__COST_OF_MBPS[10], -1),
+            Link("s2", "s4", self.__COST_OF_MBPS[100], -1),
+            Link("s3", "s4", self.__COST_OF_MBPS[1000], 220),
+        ]
 
         self.__router = RouteCalculator(
+            routing_algorithm=self.__ROUTING_ALGORITHM,
             nodes=[Node("s1"), Node("s2"), Node("s3"), Node("s4")],
             links=links,
             src=Node("s1"),
             dst=Node("s4"),
         )
 
+    def start_update_path(self):
+        self.logger.info('[INFO]started path update')
+        self.__update_path()
+
     def __update_path(self):
-        """
-        TODO: should listen notification telling occurrence of disaster from outside
-        """
-        warnings.warn("deprecated", DeprecationWarning)
+        self.__update_times += 1
 
-        t = threading.Timer(self.__update_interval_sec, self.__update_path)
-        t.start()
-
-        if not self.__topo_updated:
-            return
-        self.__topo_updated = False
-
-        path = self.__router.calc_shortest_path()
-        if path is not None:
-            self.logger.info("[INFO]updated path")
-            self.__set_route_by_path(path)
-        else:
+        path = self.__router.calc_shortest_path(self.__update_times, self.__UPDATE_INTERVAL_SEC)
+        if path is None:
             self.logger.info("[INFO]no path available")
             return
 
-    def notify_disaster(self):
-        self.logger.info('[INFO]disaster notified')
+        self.logger.info("[INFO]updated path")
+        self.__set_route_by_path(path)
+
+        # update path every self.__update_interval_sec
+        t = threading.Timer(self.__UPDATE_INTERVAL_SEC, self.__update_path)
+        t.start()
 
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -157,8 +141,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
                 self.logger.info('[INFO]initialize controller')
                 self.__init()
                 return
-
-            self.__topo_updated = True
 
     @handler.set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
@@ -247,6 +229,6 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
             data[DisasterResistantNetworkController.APP_INSTANCE_NAME]
 
     @wsgi.route('disaster_notification', '/disaster/notify', methods=['POST'])
-    def test(self, req, **kwargs):
-        self.disaster_resistant_network_app.notify_disaster()
-        return webob.Response(content_type='text/plain', body='ok')
+    def handle_disaster_notification(self, req, **kwargs):
+        self.disaster_resistant_network_app.start_update_path()
+        return webob.Response(content_type='text/plain', body='success')

@@ -1,7 +1,7 @@
 from time import sleep
 
-from mininet.cli import CLI
-from mininet.log import info
+import requests
+from mininet.log import info, error
 from mininet.net import Mininet
 from mininet.node import RemoteController
 
@@ -31,14 +31,14 @@ class Experiment(object):
         self.__prepare_backup()
         self.__net.pingAll()
 
-        # assume that disaster was detected
+        # assume that a disaster was detected
         self.__start_backup()
         self.__disaster_scheduler.run([
             Failure("s1", 1, "s2", 1, 100),
             Failure("s3", 2, "s4", 2, 220)
         ])
 
-        CLI(self.__net)
+        sleep(250)
 
         self.__net.stop()
 
@@ -60,9 +60,14 @@ class Experiment(object):
 
     def __start_backup(self):
         info("*** Disaster was predicted and start emergency backup!\n")
+
         network_name = self.__network_name()
         self.__sender.cmd(f"./bin/{network_name}/client -addr {self.__receiver.IP()}:44300 -chunk {self.__chunk} "
                           f"> log/client_{network_name}.log 2>&1 &")
+
+        r = requests.post('http://localhost:8080/disaster/notify')
+        if r.status_code != 200:
+            error("failed to notify disaster to controller: %d %s", r.status_code, r.text)
 
     def __network_name(self) -> str:
         return self.__network.name.lower()
