@@ -11,7 +11,8 @@ class RouteCalculator(object):
     COST_INF = 10 ** 10
 
     def __init__(self, routing_algorithm: RoutingAlgorithm = RoutingAlgorithm.DIJKSTRA,
-                 nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None):
+                 nodes: list[Node] = None, links: list[Link] = None, src: Node = None, dst: Node = None,
+                 datasize_gb: int = None):
         self.__routing_algorithm = routing_algorithm
 
         if nodes is None:
@@ -26,6 +27,7 @@ class RouteCalculator(object):
 
         self.__src = src
         self.__dst = dst
+        self.__datasize_gb = datasize_gb
 
     def nodes(self) -> list[Node]:
         return self.__nodes
@@ -137,6 +139,7 @@ class RouteCalculator(object):
         elapsed_sec = nth_update * update_interval_sec
         next_elapsed_sec = elapsed_sec + update_interval_sec
 
+        # calculate disaster effect
         expected_bandwidth: dict[Link, float] = {}
         for l in self.__links:
             if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:

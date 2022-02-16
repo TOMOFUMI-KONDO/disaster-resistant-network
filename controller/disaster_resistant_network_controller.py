@@ -72,6 +72,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             links=links,
             src=Node("s1"),
             dst=Node("s4"),
+            datasize_gb=20
         )
 
     def start_update_path(self):
