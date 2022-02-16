@@ -36,6 +36,9 @@ class Link(object):
         cls = type(self)
         return f"{self.node1}---{self.node2} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
 
+    def __hash__(self):
+        return hash(f"{self.node1}-{self.node2}")
+
     def __eq__(self, other: Link):
         return (self.node1 == other.node1 and self.node2 == other.node2) or \
                (self.node1 == other.node2 and self.node2 == other.node1)
