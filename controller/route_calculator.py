@@ -29,6 +29,7 @@ class RouteCalculator(object):
         self.__dst = dst
         self.__datasize_gb = datasize_gb
 
+    @property
     def nodes(self) -> list[Node]:
         return self.__nodes
 
@@ -45,6 +46,7 @@ class RouteCalculator(object):
         for l in links:
             self.rm_link(l.node1, l.node2)
 
+    @property
     def links(self) -> list[Link]:
         return self.__links
 
@@ -55,12 +57,13 @@ class RouteCalculator(object):
         link = self.__find_link_by_nodes(node1, node2)
         if link is None:
             return
-
         self.__links.remove(link)
 
+    @property
     def src(self) -> Node:
         return self.__src
 
+    @property
     def dst(self) -> Node:
         return self.__dst
 
