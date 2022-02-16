@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from components import Switch, Link, Path
+from components import Switch, Link, Path, HostServer, HostClient
 from enums import RoutingAlgorithm
 
 
@@ -11,9 +11,15 @@ class RouteCalculator(object):
     COST_INF = 10 ** 10
 
     def __init__(self, routing_algorithm: RoutingAlgorithm = RoutingAlgorithm.DIJKSTRA,
-                 switches: list[Switch] = None, links: list[Link] = None, src: Switch = None, dst: Switch = None,
-                 datasize_gb: int = None):
+                 host_pairs: list[list[HostClient, HostServer]] = None,
+                 switches: list[Switch] = None,
+                 links: list[Link] = None):
         self.__routing_algorithm = routing_algorithm
+
+        if host_pairs is None:
+            self.__host_pairs = []
+        else:
+            self.__host_pairs = host_pairs
 
         if switches is None:
             self.__switches = []
@@ -24,10 +30,6 @@ class RouteCalculator(object):
             self.__links = []
         else:
             self.__links = links
-
-        self.__src = src
-        self.__dst = dst
-        self.__datasize_gb = datasize_gb
 
     @property
     def switches(self) -> list[Switch]:
@@ -59,20 +61,6 @@ class RouteCalculator(object):
             return
         self.__links.remove(link)
 
-    @property
-    def src(self) -> Switch:
-        return self.__src
-
-    @property
-    def dst(self) -> Switch:
-        return self.__dst
-
-    def set_src(self, switch: Switch):
-        self.__src = switch
-
-    def set_dst(self, switch: Switch):
-        self.__dst = switch
-
     def calc_shortest_path(self, nth_update: int = 0, update_interval_sec: int = 0) -> Optional[Path]:
         if self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
             return self.__calc_dijkstra()
@@ -82,6 +70,7 @@ class RouteCalculator(object):
 
         raise ValueError(f"Routing algorithm is invalid: {self.__routing_algorithm}")
 
+    # TODO: fix to use host_pair instead of src and dst
     def __calc_dijkstra(self) -> Optional[Path]:
         """
         Calculate the shortest path from src to dst by dijkstra.

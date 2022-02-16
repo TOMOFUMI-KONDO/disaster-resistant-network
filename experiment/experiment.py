@@ -20,7 +20,7 @@ class Experiment(object):
             controller=RemoteController("c0", port=6633),
         )
         hosts = self.__net.hosts
-        self.__receiver, self.__sender = hosts[0], hosts[1]
+        self.__host_pairs = [{'client': hosts[i * 2], 'server': hosts[i * 2 + 1]} for i in range(len(hosts) // 2)]
 
         self.__disaster_scheduler = DisasterScheduler(self.__net.switches)
 
@@ -52,8 +52,9 @@ class Experiment(object):
 
     def __prepare_backup(self):
         network_name = self.__network_name()
-        self.__receiver.cmd(f"./bin/{network_name}/server -v > log/server_{network_name}.log 2>&1 &")
-        # receiver.cmd(f"./bin/server -v > server/{datetime.now().strftime('%Y%m%d_%H%M%S')}.log &")
+        for hp in self.__host_pairs:
+            server = hp['server']
+            server.cmd(f"./bin/{network_name}/server -v > log/{network_name}/{server.name}.log 2>&1 &")
 
         info('*** waiting to boot server...\n')
         sleep(5)
@@ -62,8 +63,11 @@ class Experiment(object):
         info("*** Disaster was predicted and start emergency backup!\n")
 
         network_name = self.__network_name()
-        self.__sender.cmd(f"./bin/{network_name}/client -addr {self.__receiver.IP()}:44300 -chunk {self.__chunk} "
-                          f"> log/client_{network_name}.log 2>&1 &")
+        for hp in self.__host_pairs:
+            client = hp['client']
+            server = hp['server']
+            client.cmd(f"./bin/{network_name}/client -addr {server.IP()}:44300 -chunk {self.__chunk} "
+                       f"> log/{network_name}/{client.name}.log 2>&1 &")
 
         r = requests.post('http://localhost:8080/disaster/notify')
         if r.status_code != 200:

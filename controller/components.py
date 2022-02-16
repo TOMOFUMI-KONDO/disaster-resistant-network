@@ -1,6 +1,32 @@
 from __future__ import annotations
 
 
+class HostClient(object):
+    def __init__(self, name: str, neighbor_switch: str, datasize_gb: int):
+        """
+        :param name: name of host
+        :param neighbor_switch: name of switch that is connected to this host
+        :param datasize_gb: size(GB) of data that is backed up.
+        """
+        self.name = name
+        self.neighbor_switch = neighbor_switch
+        self.datasize_gb = datasize_gb
+
+    def __repr__(self):
+        cls = type(self)
+        return f"{self.name} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+
+
+class HostServer(object):
+    def __init__(self, name: str, neighbor_switch: str):
+        """
+        :param name: name of host
+        :param neighbor_switch: name of switch that is connected to this host
+        """
+        self.name = name
+        self.neighbor_switch = neighbor_switch
+
+
 class Switch(object):
     def __init__(self, name: str):
         self.name = name

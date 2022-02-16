@@ -11,7 +11,7 @@ from ryu.lib.packet import ether_types, ethernet, packet
 from ryu.ofproto import ofproto_v1_3 as ofproto
 from ryu.ofproto import ofproto_v1_3_parser as ofparser
 
-from components import Switch, Path, Link
+from components import Switch, Path, Link, HostClient, HostServer
 from enums import RoutingAlgorithm
 from flow_addable import FlowAddable
 from route_calculator import RouteCalculator
@@ -68,11 +68,10 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
         self.__router = RouteCalculator(
             routing_algorithm=self.__ROUTING_ALGORITHM,
+            host_pairs=[[HostClient('h1-c', 's4', 20), HostServer('h1-s', 's1')],
+                        [HostClient('h2-c', 's2', 100), HostServer('h2-s', 's3')]],
             switches=[Switch("s1"), Switch("s2"), Switch("s3"), Switch("s4")],
             links=links,
-            src=Switch("s1"),
-            dst=Switch("s4"),
-            datasize_gb=20
         )
 
     def start_update_path(self):
