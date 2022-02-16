@@ -151,6 +151,8 @@ class RouteCalculator(object):
 
             expected_bandwidth[l] = ope_ratio * l.bandwidth
 
+        #  calculate data size of each host
+
     def __neighbors(self, node: Node) -> list[Node]:
         links = filter(lambda x: node.name in [x.node1, x.node2], self.__links)
         neighbors = map(lambda x: self.__find_opposite_node(x, node), links)

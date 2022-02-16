@@ -5,15 +5,14 @@ from mininet.topo import Topo
 class DisasterResistantNetworkTopo(Topo):
     def build(self, *args, **params):
         """
-        Topology is like below. (size = 3)
+        Topology is like below. (size = 2)
 
-        h1 --- s1 --- s2 --- s3
-               |      |      |
-               s4 --- s5 --- s6
-               |      |      |
-               s7 --- s8 --- s9 --- h2
+        h1-server --- s1 --(1G)-- s2 --- h2-client
+                       |           |
+                     (10M)       (100M)
+                       |           |
+        h2-server --- s3 --(1G)-- s4 --- h1-client
         """
-
         # TODO: create any given size topology
         # add switches
         # size = params["size"]
@@ -41,13 +40,17 @@ class DisasterResistantNetworkTopo(Topo):
 
         # add hosts
         hosts = [
-            self.addHost(f"h1", ip=f"10.0.0.1", mac=f"00:00:00:00:00:01"),
-            self.addHost(f"h2", ip=f"10.0.0.2", mac=f"00:00:00:00:00:02"),
+            self.addHost(f"h1-server", ip=f"10.0.0.1", mac=f"00:00:00:00:00:01"),
+            self.addHost(f"h1-client", ip=f"10.0.0.2", mac=f"00:00:00:00:00:02"),
+            self.addHost(f"h2-server", ip=f"10.0.0.3", mac=f"00:00:00:00:00:03"),
+            self.addHost(f"h2-client", ip=f"10.0.0.4", mac=f"00:00:00:00:00:04"),
         ]
 
         # add links between host and switch
         self.addLink(hosts[0], switches[0])
-        self.addLink(hosts[1], switches[-1])
+        self.addLink(hosts[1], switches[3])
+        self.addLink(hosts[2], switches[2])
+        self.addLink(hosts[3], switches[1])
 
 
 topos = {"disaster_resistant_network__topo": lambda: DisasterResistantNetworkTopo()}
