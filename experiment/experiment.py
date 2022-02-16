@@ -43,6 +43,8 @@ class Experiment(object):
 
         self.__net.stop()
 
+        sleep(10)
+
     # prepare for back up data
     def __set_stp(self):
         for s in self.__net.switches:
