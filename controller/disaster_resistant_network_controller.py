@@ -4,6 +4,8 @@ import threading
 import warnings
 from typing import Optional
 
+import webob
+from ryu.app import wsgi
 from ryu.base import app_manager
 from ryu.controller import ofp_event, controller, handler
 from ryu.lib.packet import ether_types, ethernet, packet
@@ -17,6 +19,8 @@ from route_calculator import RouteCalculator
 
 
 class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
+    _CONTEXTS = {'wsgi': wsgi.WSGIApplication}
+    APP_INSTANCE_NAME = 'disaster_resistant_network_app'
     OFP_VERSIONS = [ofproto.OFP_VERSION]
 
     # faster bps, lower cost
@@ -29,6 +33,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __init__(self, routing_algorithm=RoutingAlgorithm.TAKAHIRA, update_interval_sec=30, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
+
+        wsgi = kwargs['wsgi']
+        wsgi.register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
 
         self.__topo_updated = False
         self.__h1 = "10.0.0.1"
@@ -105,6 +112,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         else:
             self.logger.info("[INFO]no path available")
             return
+
+    def notify_disaster(self):
+        self.logger.info('[INFO]disaster notified')
 
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -228,3 +238,15 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     def __to_dpid(self, switch_name: str) -> int:
         # assume switch name is like "s[0-9]+"
         return int(switch_name[1:])
+
+
+class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
+    def __init__(self, req, link, data, **config):
+        super(DisasterResistantNetworkWsgiController, self).__init__(req, link, data, **config)
+        self.disaster_resistant_network_app: DisasterResistantNetworkController = \
+            data[DisasterResistantNetworkController.APP_INSTANCE_NAME]
+
+    @wsgi.route('disaster_notification', '/disaster/notify', methods=['POST'])
+    def test(self, req, **kwargs):
+        self.disaster_resistant_network_app.notify_disaster()
+        return webob.Response(content_type='text/plain', body='ok')
