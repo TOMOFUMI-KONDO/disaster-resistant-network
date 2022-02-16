@@ -101,8 +101,8 @@ class RouteCalculator(object):
 
                 # update cost if it's less than current
                 link_to_neighbor = self.__find_link_by_nodes(last_fixed_node.name, neighbor.name)
-                if costs[last_fixed_node] + link_to_neighbor.cost < costs[neighbor]:
-                    costs[neighbor] = costs[last_fixed_node] + link_to_neighbor.cost
+                if costs[last_fixed_node] + link_to_neighbor.cost() < costs[neighbor]:
+                    costs[neighbor] = costs[last_fixed_node] + link_to_neighbor.cost()
                     link_to_node[neighbor] = link_to_neighbor
 
             cost_of_not_fixed_nodes = dict(filter(lambda x: x[0] not in fixed_nodes, costs.items()))

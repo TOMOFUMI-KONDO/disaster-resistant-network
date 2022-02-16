@@ -23,13 +23,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     _CONTEXTS = {'wsgi': wsgi.WSGIApplication}
     APP_INSTANCE_NAME = 'disaster_resistant_network_app'
 
-    # faster bps, lower cost
-    __COST_OF_MBPS = {
-        10000: 1,
-        1000: 10,
-        100: 100,
-        10: 1000,
-    }
     __ROUTING_ALGORITHM = RoutingAlgorithm.TAKAHIRA
     __UPDATE_INTERVAL_SEC = 30
 
@@ -67,10 +60,10 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             4: {1: Node("s2"), 2: Node("s3")},
         }
         links = [
-            Link("s1", "s2", self.__COST_OF_MBPS[1000], 100),
-            Link("s1", "s3", self.__COST_OF_MBPS[10], -1),
-            Link("s2", "s4", self.__COST_OF_MBPS[100], -1),
-            Link("s3", "s4", self.__COST_OF_MBPS[1000], 220),
+            Link("s1", "s2", 1000, 100),
+            Link("s1", "s3", 10, -1),
+            Link("s2", "s4", 100, -1),
+            Link("s3", "s4", 1000, 220),
         ]
 
         self.__router = RouteCalculator(

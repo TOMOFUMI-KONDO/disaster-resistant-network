@@ -3,6 +3,7 @@ import unittest
 from route_calculator import RouteCalculator, Node, Link
 
 
+# FIXME: follow RouteCalculator implementation
 class RouteCalculatorTest(unittest.TestCase):
     def test_calc_shortest_path_simple_topology(self):
         """
