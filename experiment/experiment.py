@@ -11,16 +11,18 @@ from enums import Network
 
 
 class Experiment(object):
-    def __init__(self, network: Network, chunk: int):
+    def __init__(self, network: Network):
         self.__network = network
-        self.__chunk = chunk
 
         self.__net = Mininet(
             topo=DisasterResistantNetworkTopo(),
             controller=RemoteController("c0", port=6633),
         )
         hosts = self.__net.hosts
-        self.__host_pairs = [{'client': hosts[i * 2], 'server': hosts[i * 2 + 1]} for i in range(len(hosts) // 2)]
+        self.__host_pairs = [
+            {'client': hosts[0], 'server': hosts[1], 'chunk': 10 ** 10 * 2},
+            {'client': hosts[2], 'server': hosts[4], 'chunk': 10 ** 11},
+        ]
 
         self.__disaster_scheduler = DisasterScheduler(self.__net.switches)
 
@@ -71,7 +73,8 @@ class Experiment(object):
         for hp in self.__host_pairs:
             client = hp['client']
             server = hp['server']
-            client.cmd(f"./bin/{network_name}/client -addr {server.IP()}:44300 -chunk {self.__chunk} "
+            chunk = hp['chunk']
+            client.cmd(f"./bin/{network_name}/client -addr {server.IP()}:44300 -chunk {chunk} "
                        f"> log/{network_name}/{client.name}.log 2>&1 &")
 
         # notify start of a disaster
