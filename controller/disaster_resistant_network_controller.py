@@ -86,7 +86,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             self.logger.info("[INFO]no path available")
             return
 
-        self.logger.info("[INFO]updated path")
+        self.logger.info(f"[INFO]updated path {self.__update_times}th")
         self.__set_route_by_path(path)
 
         self.__update_times += 1
