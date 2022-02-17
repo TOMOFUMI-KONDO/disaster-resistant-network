@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from copy import deepcopy
+import copy
 
 
 class Host(object):
@@ -130,9 +130,25 @@ class DirectedLink(Link):
 class Path(object):
     @staticmethod
     def merge(path1: Path, path2: Path) -> Path:
-        merged = deepcopy(path1)
-        merged.extend(path2)
-        return merged
+        if path1.len >= path2.len:
+            longer = copy.deepcopy(path1)
+            shorter = copy.deepcopy(path2)
+        else:
+            longer = copy.deepcopy(path2)
+            shorter = copy.deepcopy(path1)
+
+        for l in longer.links:
+            if l in shorter.links:
+                shorter.rm(l)
+
+            if isinstance(l, DirectedLink):
+                reverse_link = DirectedLink(False, l.switch2, l.switch1, l.bandwidth_gbps, l.fail_at_sec)
+                if reverse_link in shorter.links:
+                    longer.rm(l)
+                    shorter.rm(reverse_link)
+
+        longer.extend(shorter)
+        return longer
 
     def __init__(self, links: list[Link] = None):
         if links is None:
@@ -144,6 +160,10 @@ class Path(object):
         cls = type(self)
         return " ".join([l.__repr__() for l in self.links]) + \
                f"<{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+
+    @property
+    def len(self):
+        return len(self.links)
 
     def append(self, link: Link):
         self.links.append(link)
