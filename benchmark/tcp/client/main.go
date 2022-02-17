@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -31,6 +30,12 @@ func init() {
 }
 
 func main() {
+	file, err := benchmark.GenChunk(chunk)
+	if err != nil {
+		log.Fatalf("failed to create chunk file: %v\n", err)
+	}
+	defer file.Close()
+
 	w, err := os.Create("keylog.txt")
 	if err != nil {
 		log.Fatalf("failed to create keylog.txt: %v\n", err)
@@ -46,7 +51,7 @@ func main() {
 			continue
 		}
 
-		if err = send(conn, &offset); err != nil {
+		if err = send(conn, file, &offset); err != nil {
 			log.Printf("failed to send: %v\nretrying...\n", err)
 			time.Sleep(RetryInterval)
 			continue
@@ -56,18 +61,8 @@ func main() {
 	}
 }
 
-func send(conn *tls.Conn, offset *int64) error {
+func send(conn *tls.Conn, file *os.File, offset *int64) error {
 	defer conn.Close()
-
-	file, err := ioutil.TempFile("", "")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(file.Name())
-
-	if err := file.Truncate(chunk); err != nil {
-		return err
-	}
 
 	buf := make([]byte, 1024)
 	fmt.Println("sending data...")
