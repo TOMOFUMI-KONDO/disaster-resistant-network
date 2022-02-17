@@ -89,6 +89,15 @@ class Link(object):
 
 
 class DirectedLink(Link):
+    @staticmethod
+    def from_link(link: Link, from_: str, to: str):
+        if link.switch1 == from_:
+            assert link.switch2 == to
+            return DirectedLink(False, link.switch1, link.switch2, link.bandwidth_gbps, link.fail_at_sec)
+        else:
+            assert link.switch1 == to and link.switch2 == from_
+            return DirectedLink(False, link.switch2, link.switch1, link.bandwidth_gbps, link.fail_at_sec)
+
     def __init__(self, direction: bool, switch1: str, switch2: str, bandwidth_gbps: float = -1, fail_at_sec: int = -1):
         """
         :param direction: if False, direction is switch1 to switch2. otherwise, it is reverse.

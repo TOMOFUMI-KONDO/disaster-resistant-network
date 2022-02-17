@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from components import Switch, Link, Path, HostServer, HostClient
+from components import Switch, Link, Path, HostServer, HostClient, DirectedLink
 from enums import RoutingAlgorithm
 
 
@@ -186,8 +186,8 @@ class RouteCalculator(object):
 
             for s1, v in switch_to_link.items():
                 for s2, link in v.items():
-                    paths[s1][s2] = Path([link])
-                    paths[s2][s1] = Path([link])
+                    paths[s1][s2] = Path([DirectedLink.from_link(link, s1, s2)])
+                    paths[s2][s1] = Path([DirectedLink.from_link(link, s2, s1)])
 
             # calc maximum bottleneck bw and its path of each switch pair by Algorithm like Floyd-Warshall
             for s1 in self.__switches:
@@ -199,7 +199,7 @@ class RouteCalculator(object):
                             bandwidths[s1.name][s3.name] = bw_via_s2
                             bandwidths[s3.name][s1.name] = bw_via_s2
                             paths[s1.name][s3.name] = Path.merge(paths[s1.name][s2.name], paths[s2.name][s3.name])
-                            paths[s3.name][s1.name] = Path.merge(paths[s1.name][s2.name], paths[s2.name][s3.name])
+                            paths[s3.name][s1.name] = Path.merge(paths[s3.name][s2.name], paths[s2.name][s1.name])
 
             path = paths[client.neighbor_switch][server.neighbor_switch]
             result.append([client, server, path])

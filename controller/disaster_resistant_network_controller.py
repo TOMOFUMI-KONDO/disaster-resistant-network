@@ -28,16 +28,11 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __init__(self, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
-
         kwargs['wsgi'].register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
-
-        self.__h1 = "10.0.0.1"
-        self.__h2 = "10.0.0.2"
-        self.__update_times = 0
-
         self.__init()
 
     def __init(self):
+        self.__update_times = 0
         self.__route_priority = 100  # this will be incremented on each routing
         self.__datapaths: dict[int, controller.Datapath] = {}  # dict[dpid, Datapath]
         self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
@@ -52,6 +47,13 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
                   |           |
         h2-s --- s3 --(1G)-- s4 --- h1-c
         """
+        self.__host_to_ip = {
+            'h1-c': '10.0.0.1',
+            'h1-s': '10.0.0.2',
+            'h2-c': '10.0.0.3',
+            'h2-s': '10.0.0.4',
+        }
+
         # dict[dpid, dict[port, Switch]]
         self.__port_to_switch: dict[int, dict[int, Switch]] = {
             1: {1: Switch("s2"), 2: Switch("s3")},
@@ -80,7 +82,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __update_path(self):
         path = self.__router.calc_shortest_path(self.__update_times, self.__UPDATE_INTERVAL_SEC)
-        if path is None:
+        if len(path) == 0:
             self.logger.info("[INFO]no path available")
             return
 
@@ -92,6 +94,35 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         # update path every self.__update_interval_sec
         t = threading.Timer(self.__UPDATE_INTERVAL_SEC, self.__update_path)
         t.start()
+
+    def __set_route_by_path(self, paths: list[list[HostClient, HostServer, Path]]):
+        for [client, server, path] in paths:
+            client_ip = self.__host_to_ip[client.name]
+            server_ip = self.__host_to_ip[server.name]
+
+            for l in path.links:
+                switch1_dpid = self.__to_dpid(l.switch1)
+                port_switch1_to_switch2 = self.__find_port(switch1_dpid, Switch(l.switch2))
+                match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=server_ip)
+                actions = [ofparser.OFPActionOutput(port_switch1_to_switch2)]
+                self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority, match, actions)
+
+                switch2_dpid = self.__to_dpid(l.switch2)
+                port_switch2_to_switch1 = self.__find_port(switch2_dpid, Switch(l.switch1))
+                match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=client_ip)
+                actions = [ofparser.OFPActionOutput(port_switch2_to_switch1)]
+                self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority, match, actions)
+
+        self.__route_priority += 1
+
+    def __find_port(self, dpid: int, switch: Switch) -> Optional[int]:
+        for k, v in self.__port_to_switch[dpid].items():
+            if v == switch:
+                return k
+
+    def __to_dpid(self, switch_name: str) -> int:
+        # assume switch name is like "s[0-9]+"
+        return int(switch_name[1:])
 
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -190,31 +221,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
                 self._add_flow(dp, 10, match, actions)
 
         return actions
-
-    def __set_route_by_path(self, path: Path):
-        for l in path.links:
-            switch1_dpid = self.__to_dpid(l.switch1)
-            port_switch1_to_switch2 = self.__find_port(switch1_dpid, Switch(l.switch2))
-            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__h2)
-            actions = [ofparser.OFPActionOutput(port_switch1_to_switch2)]
-            self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority, match, actions)
-
-            switch2_dpid = self.__to_dpid(l.switch2)
-            port_switch2_to_switch1 = self.__find_port(switch2_dpid, Switch(l.switch1))
-            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__h1)
-            actions = [ofparser.OFPActionOutput(port_switch2_to_switch1)]
-            self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority, match, actions)
-
-        self.__route_priority += 1
-
-    def __find_port(self, dpid: int, switch: Switch) -> Optional[int]:
-        for k, v in self.__port_to_switch[dpid].items():
-            if v == switch:
-                return k
-
-    def __to_dpid(self, switch_name: str) -> int:
-        # assume switch name is like "s[0-9]+"
-        return int(switch_name[1:])
 
 
 class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
