@@ -190,7 +190,7 @@ class RouteCalculator(object):
             for s1 in self.__switches:
                 for s2 in self.__switches:
                     for s3 in self.__switches:
-                        bw_direct = bandwidths[s1.name][s2.name]
+                        bw_direct = bandwidths[s1.name][s3.name]
                         bw_via_s2 = min(bandwidths[s1.name][s2.name], bandwidths[s2.name][s3.name])
                         if bw_direct < bw_via_s2:
                             bandwidths[s1.name][s3.name] = bw_via_s2
