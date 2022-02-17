@@ -229,7 +229,7 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
         self.disaster_resistant_network_app: DisasterResistantNetworkController = \
             data[DisasterResistantNetworkController.APP_INSTANCE_NAME]
 
-    @wsgi.route('disaster_notification', '/disaster/notify', methods=['POST'])
-    def handle_disaster_notification(self, req, **kwargs):
+    @wsgi.route('disaster', '/disaster', methods=['POST'])
+    def handle_disaster(self, req, **kwargs):
         self.disaster_resistant_network_app.start_update_path()
         return webob.Response(content_type='text/plain', body='success')

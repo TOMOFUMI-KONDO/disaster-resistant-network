@@ -74,7 +74,8 @@ class Experiment(object):
             client.cmd(f"./bin/{network_name}/client -addr {server.IP()}:44300 -chunk {self.__chunk} "
                        f"> log/{network_name}/{client.name}.log 2>&1 &")
 
-        r = requests.post('http://localhost:8080/disaster/notify')
+        # notify start of a disaster
+        r = requests.post('http://localhost:8080/disaster')
         if r.status_code != 200:
             error("failed to notify disaster to controller: %d %s", r.status_code, r.text)
 
