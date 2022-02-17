@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/TOMOFUMI-KONDO/disaster-resistant-network/benchmark"
+
 	"github.com/lucas-clemente/quic-go"
 )
 
@@ -36,6 +38,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create keylog.txt: %v\n", err)
 	}
+
+	fmt.Printf("start to send %s chunk\n", benchmark.FormatSize(chunk))
 
 	for {
 		session, err := quic.DialAddr(addr, genTLSConf(w), nil)

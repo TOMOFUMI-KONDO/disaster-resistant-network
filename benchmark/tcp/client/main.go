@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/TOMOFUMI-KONDO/disaster-resistant-network/benchmark"
 )
 
 const (
@@ -33,6 +35,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create keylog.txt: %v\n", err)
 	}
+
+	fmt.Printf("start to send %s chunk\n", benchmark.FormatSize(chunk))
 
 	for {
 		conn, err := tls.Dial("tcp", addr, genTLSConf(w))
