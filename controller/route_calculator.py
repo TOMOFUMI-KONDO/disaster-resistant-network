@@ -134,16 +134,9 @@ class RouteCalculator(object):
         elapsed_sec = nth_update * update_interval_sec
         next_elapsed_sec = elapsed_sec + update_interval_sec
 
-        # expected bandwidths between each two switches. dict[switch1_name, dict[switch2_name, bw]]
-        expected_bw_gbps: dict[str, dict[str, float]] = {}
-        # path of each switch pair that has maximum bottleneck bw
-        paths: dict[str, dict[str, Path]] = {}
-        for s1 in self.__switches:
-            for s2 in self.__switches:
-                expected_bw_gbps[s1.name][s2.name] = self.BANDWIDTH_INF if s1 == s2 else 0
-                paths[s1.name][s2.name] = Path()
-
-        # calculate disaster effect
+        expected_bw_gbps: dict[str, dict[str, float]] = {}  # dict[switch1_name, dict[switch2_name, bw]]
+        switch_to_link: dict[str, dict[str, Link]] = {}  # dict[switch1_name, dict[switch2_name, Link]]
+        # calculate expected bandwidths between each connected switches.
         for l in self.__links:
             if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:
                 ope_ratio = 1
@@ -152,13 +145,18 @@ class RouteCalculator(object):
             else:
                 ope_ratio = 0
 
+            expected_bw_gbps.setdefault(l.switch1, {})
+            expected_bw_gbps.setdefault(l.switch2, {})
+            switch_to_link.setdefault(l.switch1, {})
+            switch_to_link.setdefault(l.switch2, {})
+
             expected_bw = ope_ratio * l.bandwidth_gbps
             expected_bw_gbps[l.switch1][l.switch2] = expected_bw
             expected_bw_gbps[l.switch2][l.switch1] = expected_bw
-            paths[l.switch1][l.switch2] = Path([l])
-            paths[l.switch2][l.switch1] = Path([l])
+            switch_to_link[l.switch1][l.switch2] = l
+            switch_to_link[l.switch2][l.switch1] = l
 
-        #  calculate requested bw of each host pair
+        # calculate requested bw of each host pair
         requested_bandwidth_gbps: list[list[HostClient, HostServer, float]] = []
         for [client, server] in self.__host_pairs:
             # TODO: consider whether client and server have already failed
@@ -167,19 +165,41 @@ class RouteCalculator(object):
         # sort order by bw desc
         requested_bandwidth_gbps.sort(key=lambda x: x[2], reverse=True)
 
-        result: list[list[HostClient, HostServer, Path]] = []
         # assign path to each host pair greedily
+        result: list[list[HostClient, HostServer, Path]] = []
         for [client, server, bw] in requested_bandwidth_gbps:
+            # bandwidths all between each two switches. dict[switch1_name, dict[switch2_name, bw]]
+            bandwidths: dict[str, dict[str, float]] = {}
+
+            # path between each switch pair that has maximum bottleneck bw
+            paths: dict[str, dict[str, Path]] = {}
+
+            for s1 in self.__switches:
+                for s2 in self.__switches:
+                    bandwidths[s1.name][s2.name] = self.BANDWIDTH_INF if s1 == s2 else 0
+                    paths[s1.name][s2.name] = Path()
+
+            for s1, v in expected_bw_gbps.items():
+                for s2, bw in v.items():
+                    bandwidths[s1][s2] = bw
+                    bandwidths[s2][s1] = bw
+
+            for s1, v in switch_to_link.items():
+                for s2, link in v.items():
+                    paths[s1][s2] = Path([link])
+                    paths[s2][s1] = Path([link])
+
             # calc maximum bottleneck bw and its path of each switch pair by Algorithm like Floyd-Warshall
             for s1 in self.__switches:
                 for s2 in self.__switches:
                     for s3 in self.__switches:
-                        bw_direct = expected_bw_gbps[s1.name][s2.name]
-                        bw_via_s2 = min(expected_bw_gbps[s1.name][s2.name], expected_bw_gbps[s2.name][s3.name])
+                        bw_direct = bandwidths[s1.name][s2.name]
+                        bw_via_s2 = min(bandwidths[s1.name][s2.name], bandwidths[s2.name][s3.name])
                         if bw_direct < bw_via_s2:
-                            expected_bw_gbps[s1.name][s3.name] = bw_via_s2
-                            expected_bw_gbps[s3.name][s1.name] = bw_via_s2
+                            bandwidths[s1.name][s3.name] = bw_via_s2
+                            bandwidths[s3.name][s1.name] = bw_via_s2
                             paths[s1.name][s3.name] = Path.merge(paths[s1.name][s2.name], paths[s2.name][s3.name])
+                            paths[s3.name][s1.name] = Path.merge(paths[s1.name][s2.name], paths[s2.name][s3.name])
 
             path = paths[client.neighbor_switch][server.neighbor_switch]
             result.append([client, server, path])
