@@ -41,6 +41,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.init()
 
     def init(self):
+        self.logger.info('[INFO]initializing controller...')
         self.__is_updating = False
         self.__update_times = 0
         self.__route_priority = 100  # this will be incremented on each routing
