@@ -56,7 +56,7 @@ class Switch(object):
 
 
 class Link(object):
-    def __init__(self, switch1: str, switch2: str, bandwidth_gbps: float = -1, fail_at_sec: int = -1):
+    def __init__(self, switch1: str, switch2: str, bandwidth_gbps: float, fail_at_sec: int = -1):
         """
         :param switch1: name of switch on one side
         :param switch2: name of switch on the other side

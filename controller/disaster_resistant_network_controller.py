@@ -61,19 +61,17 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             3: {1: Switch("s1"), 2: Switch("s4")},
             4: {1: Switch("s2"), 2: Switch("s3")},
         }
-        links = [
-            Link("s1", "s2", 1, 100),
-            Link("s1", "s3", 0.01, -1),
-            Link("s2", "s4", 0.1, -1),
-            Link("s3", "s4", 1, 220),
-        ]
-
         self.__router = RouteCalculator(
             routing_algorithm=self.__ROUTING_ALGORITHM,
             host_pairs=[[HostClient('h1-c', 's4', 220, 20), HostServer('h1-s', 's1')],
                         [HostClient('h2-c', 's2', 400, 100), HostServer('h2-s', 's3')]],
             switches=[Switch("s1"), Switch("s2"), Switch("s3"), Switch("s4")],
-            links=links,
+            links=[
+                Link("s1", "s2", 1, 100),
+                Link("s1", "s3", 0.01, -1),
+                Link("s2", "s4", 0.1, -1),
+                Link("s3", "s4", 1, 220),
+            ],
         )
 
     def start_update_path(self):
