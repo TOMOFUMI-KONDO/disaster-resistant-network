@@ -39,10 +39,12 @@ class Experiment(object):
             HostFailure("h2-c", "s2", 3, 400),
         ])
 
+        # wait until disaster finishes
         sleep(450)
 
         self.__net.stop()
 
+        # cleanup time
         sleep(10)
 
     # prepare for back up data
