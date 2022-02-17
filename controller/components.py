@@ -12,6 +12,13 @@ class Host(object):
         self.name = name
         self.neighbor_switch = neighbor_switch
 
+    def __repr__(self):
+        cls = type(self)
+        return f"{self.name} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+
+    def __hash__(self):
+        return hash(self.name)
+
 
 class HostClient(Host):
     def __init__(self, name: str, neighbor_switch: str, fail_at_sec: int, datasize_gb: int):
@@ -23,13 +30,6 @@ class HostClient(Host):
         super(HostClient, self).__init__(name, neighbor_switch)
         self.fail_at_sec = fail_at_sec
         self.datasize_gb = datasize_gb
-
-    def __repr__(self):
-        cls = type(self)
-        return f"{self.name} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
-
-    def __hash__(self):
-        return hash(self.name)
 
 
 class HostServer(Host):
