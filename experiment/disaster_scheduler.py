@@ -19,11 +19,11 @@ class DisasterScheduler(object):
 
         if isinstance(failure, LinkFailure):
             info(f"*** Link between {failure.switch1} and {failure.switch2} failed\n")
-            s.cmd(f"ovs-vsctl del-port {failure.switch1}-eth{failure.port_switch1}")
-            s.cmd(f"ovs-vsctl del-port {failure.switch2}-eth{failure.port_switch2}")
+            s.vsctl(f"del-port {failure.switch1}-eth{failure.port_switch1}")
+            s.vsctl(f"del-port {failure.switch2}-eth{failure.port_switch2}")
         elif isinstance(failure, HostFailure):
             info(f"*** Host {failure.host} failed\n")
-            s.cmd(f"ovs-vsctl del-port {failure.neighbor_switch}-eth{failure.port}")
+            s.vsctl(f"del-port {failure.neighbor_switch}-eth{failure.port}")
 
 
 class Failure(object):
