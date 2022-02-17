@@ -88,6 +88,35 @@ class Link(object):
         return not self == other
 
 
+class DirectedLink(Link):
+    def __init__(self, direction: bool, switch1: str, switch2: str, bandwidth_gbps: float = -1, fail_at_sec: int = -1):
+        """
+        :param direction: if False, direction is switch1 to switch2. otherwise, it is reverse.
+        """
+        super(DirectedLink, self).__init__(switch1, switch2, bandwidth_gbps, fail_at_sec)
+        self.direction = direction
+
+    def __repr__(self):
+        cls = type(self)
+        return f"{self.__link_repr} <{cls.__module__}.{cls.__name__} object at {hex(id(self))}>"
+
+    def __hash__(self):
+        return hash(self.__link_repr)
+
+    def __eq__(self, other: DirectedLink):
+        if self.direction == other.direction:
+            return self.switch1 == other.switch1 and self.switch2 == other.switch2
+        else:
+            return self.switch1 == other.switch2 and self.switch2 == other.switch1
+
+    def __ne__(self, other: DirectedLink):
+        return not self == other
+
+    @property
+    def __link_repr(self) -> str:
+        return f"{self.switch1}<--{self.switch2}" if self.direction else f"{self.switch1}-->{self.switch2}"
+
+
 # TODO: make links private
 class Path(object):
     @staticmethod
