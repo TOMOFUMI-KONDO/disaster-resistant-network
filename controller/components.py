@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 
 class Host(object):
     def __init__(self, name: str, neighbor_switch: str):
@@ -86,7 +88,14 @@ class Link(object):
         return not self == other
 
 
+# TODO: make links private
 class Path(object):
+    @staticmethod
+    def merge(path1: Path, path2: Path) -> Path:
+        merged = deepcopy(path1)
+        merged.extend(path2)
+        return merged
+
     def __init__(self, links: list[Link] = None):
         if links is None:
             self.links = []
@@ -103,3 +112,9 @@ class Path(object):
 
     def push(self, link: Link):
         self.links.insert(0, link)
+
+    def rm(self, link: Link):
+        self.links.remove(link)
+
+    def extend(self, path: Path):
+        self.links.extend(path.links)

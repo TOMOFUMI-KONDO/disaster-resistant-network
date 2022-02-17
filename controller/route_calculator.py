@@ -7,8 +7,9 @@ from enums import RoutingAlgorithm
 
 
 class RouteCalculator(object):
-    # approximate infinite cost
+    # approximate infinite cost and bandwidth
     COST_INF = 10 ** 10
+    BANDWIDTH_INF = 10 ** 10
 
     def __init__(self, routing_algorithm: RoutingAlgorithm = RoutingAlgorithm.DIJKSTRA,
                  host_pairs: list[list[HostClient, HostServer]] = None,
@@ -61,7 +62,8 @@ class RouteCalculator(object):
             return
         self.__links.remove(link)
 
-    def calc_shortest_path(self, nth_update: int = 0, update_interval_sec: int = 0) -> Optional[Path]:
+    def calc_shortest_path(self, nth_update: int = 0, update_interval_sec: int = 0) \
+            -> list[list[HostClient, HostServer, Path]]:
         if self.__routing_algorithm == RoutingAlgorithm.DIJKSTRA:
             return self.__calc_dijkstra()
 
@@ -71,7 +73,7 @@ class RouteCalculator(object):
         raise ValueError(f"Routing algorithm is invalid: {self.__routing_algorithm}")
 
     # TODO: fix to use host_pair instead of src and dst
-    def __calc_dijkstra(self) -> Optional[Path]:
+    def __calc_dijkstra(self) -> list[list[HostClient, HostServer, Path]]:
         """
         Calculate the shortest path from src to dst by dijkstra.
 
@@ -115,7 +117,8 @@ class RouteCalculator(object):
         return path
 
     # TODO: implement
-    def __calc_takahira(self, nth_update: int, update_interval_sec: int) -> Optional[Path]:
+    def __calc_takahira(self, nth_update: int, update_interval_sec: int) \
+            -> list[list[HostClient, HostServer, Path]]:
         """
         Calculate the path from src to dst by takahira method taking into account effect by disaster and amount of
         backup data.
@@ -131,8 +134,16 @@ class RouteCalculator(object):
         elapsed_sec = nth_update * update_interval_sec
         next_elapsed_sec = elapsed_sec + update_interval_sec
 
+        # expected bandwidths between each two switches. dict[switch1_name, dict[switch2_name, bw]]
+        expected_bw_gbps: dict[str, dict[str, float]] = {}
+        # path of each switch pair that has maximum bottleneck bw
+        paths: dict[str, dict[str, Path]] = {}
+        for s1 in self.__switches:
+            for s2 in self.__switches:
+                expected_bw_gbps[s1.name][s2.name] = self.BANDWIDTH_INF if s1 == s2 else 0
+                paths[s1.name][s2.name] = Path()
+
         # calculate disaster effect
-        expected_bandwidth_gbps: dict[Link, float] = {}
         for l in self.__links:
             if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:
                 ope_ratio = 1
@@ -141,13 +152,44 @@ class RouteCalculator(object):
             else:
                 ope_ratio = 0
 
-            expected_bandwidth_gbps[l] = ope_ratio * l.bandwidth_gbps
+            expected_bw = ope_ratio * l.bandwidth_gbps
+            expected_bw_gbps[l.switch1][l.switch2] = expected_bw
+            expected_bw_gbps[l.switch2][l.switch1] = expected_bw
+            paths[l.switch1][l.switch2] = Path([l])
+            paths[l.switch2][l.switch1] = Path([l])
 
-        #  calculate data size of each host
-        requested_bandwidth_gbps: dict[HostClient: float] = {}
-        for hp in self.__host_pairs:
-            client = hp[0]
-            requested_bandwidth_gbps[client] = client.datasize_gb / client.fail_at_sec
+        #  calculate requested bw of each host pair
+        requested_bandwidth_gbps: list[list[HostClient, HostServer, float]] = []
+        for [client, server] in self.__host_pairs:
+            # TODO: consider whether client and server have already failed
+            requested_bandwidth_gbps.append([client, server, client.datasize_gb / client.fail_at_sec])
+
+        # sort order by bw desc
+        requested_bandwidth_gbps.sort(key=lambda x: x[2], reverse=True)
+
+        result: list[list[HostClient, HostServer, Path]] = []
+        # assign path to each host pair greedily
+        for [client, server, bw] in requested_bandwidth_gbps:
+            # calc maximum bottleneck bw and its path of each switch pair by Algorithm like Floyd-Warshall
+            for s1 in self.__switches:
+                for s2 in self.__switches:
+                    for s3 in self.__switches:
+                        bw_direct = expected_bw_gbps[s1.name][s2.name]
+                        bw_via_s2 = min(expected_bw_gbps[s1.name][s2.name], expected_bw_gbps[s2.name][s3.name])
+                        if bw_direct < bw_via_s2:
+                            expected_bw_gbps[s1.name][s3.name] = bw_via_s2
+                            expected_bw_gbps[s3.name][s1.name] = bw_via_s2
+                            paths[s1.name][s3.name] = Path.merge(paths[s1.name][s2.name], paths[s2.name][s3.name])
+
+            path = paths[client.neighbor_switch][server.neighbor_switch]
+            result.append([client, server, path])
+
+            # subtract assigned bw from each link on path
+            for l in path.links:
+                expected_bw_gbps[l.switch1][l.switch2] = max(expected_bw_gbps[l.switch1][l.switch2] - bw, 0)
+                expected_bw_gbps[l.switch2][l.switch1] = max(expected_bw_gbps[l.switch2][l.switch1] - bw, 0)
+
+        return result
 
     def __neighbors(self, switch: Switch) -> list[Switch]:
         links = filter(lambda x: switch.name in [x.switch1, x.switch2], self.__links)
