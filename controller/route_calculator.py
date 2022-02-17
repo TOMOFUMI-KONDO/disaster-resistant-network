@@ -164,7 +164,7 @@ class RouteCalculator(object):
 
         # assign path to each host pair greedily
         result: list[list[HostClient, HostServer, Path]] = []
-        for [client, server, bw] in requested_bandwidth_gbps:
+        for [client, server, req_bw] in requested_bandwidth_gbps:
             # bandwidths all between each two switches. dict[switch1_name, dict[switch2_name, bw]]
             bandwidths: dict[str, dict[str, float]] = {s.name: {} for s in self.__switches}
 
@@ -177,9 +177,9 @@ class RouteCalculator(object):
                     paths[s1.name][s2.name] = Path()
 
             for s1, v in expected_bw_gbps.items():
-                for s2, bw in v.items():
-                    bandwidths[s1][s2] = bw
-                    bandwidths[s2][s1] = bw
+                for s2, exp_bw in v.items():
+                    bandwidths[s1][s2] = exp_bw
+                    bandwidths[s2][s1] = exp_bw
 
             for s1, v in switch_to_link.items():
                 for s2, link in v.items():
@@ -203,9 +203,9 @@ class RouteCalculator(object):
 
             # subtract assigned bw from each link on path
             for l in path.links:
-                expected_bw_gbps[l.switch1][l.switch2] = max(expected_bw_gbps[l.switch1][l.switch2] - bw, 0)
-                expected_bw_gbps[l.switch2][l.switch1] = max(expected_bw_gbps[l.switch2][l.switch1] - bw, 0)
-
+                expected_bw_gbps[l.switch1][l.switch2] = max(expected_bw_gbps[l.switch1][l.switch2] - req_bw, 0)
+                expected_bw_gbps[l.switch2][l.switch1] = max(expected_bw_gbps[l.switch2][l.switch1] - req_bw, 0)
+        print(result)
         return result
 
     def __neighbors(self, switch: Switch) -> list[Switch]:
