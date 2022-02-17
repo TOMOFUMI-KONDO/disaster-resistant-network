@@ -173,7 +173,9 @@ class RouteCalculator(object):
 
             for s1 in self.__switches:
                 for s2 in self.__switches:
-                    bandwidths[s1.name][s2.name] = self.BANDWIDTH_INF if s1 == s2 else 0
+                    bw = self.BANDWIDTH_INF if s1 == s2 else -self.BANDWIDTH_INF
+                    bandwidths[s1.name][s2.name] = bw
+                    bandwidths[s2.name][s1.name] = bw
                     paths[s1.name][s2.name] = Path()
 
             for s1, v in expected_bw_gbps.items():
