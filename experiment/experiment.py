@@ -21,7 +21,7 @@ class Experiment(object):
         hosts = self.__net.hosts
         self.__host_pairs = [
             {'client': hosts[0], 'server': hosts[1], 'chunk': 10 ** 10 * 2},
-            {'client': hosts[2], 'server': hosts[4], 'chunk': 10 ** 11},
+            {'client': hosts[2], 'server': hosts[3], 'chunk': 10 ** 11},
         ]
 
         self.__disaster_scheduler = DisasterScheduler(self.__net.switches)
