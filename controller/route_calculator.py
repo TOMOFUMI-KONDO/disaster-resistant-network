@@ -207,7 +207,7 @@ class RouteCalculator(object):
             for l in path.links:
                 expected_bw_gbps[l.switch1][l.switch2] = expected_bw_gbps[l.switch1][l.switch2] - req_bw
                 expected_bw_gbps[l.switch2][l.switch1] = expected_bw_gbps[l.switch2][l.switch1] - req_bw
-        print(result)
+
         return result
 
     def __neighbors(self, switch: Switch) -> list[Switch]:
