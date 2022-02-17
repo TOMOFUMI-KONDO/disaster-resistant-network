@@ -28,10 +28,20 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __init__(self, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
-        kwargs['wsgi'].register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
-        self.__init()
+        self.__is_updating = None
+        self.__update_times = None
+        self.__route_priority = None
+        self.__datapaths = None
+        self.__mac_to_port = None
+        self.__host_to_ip = None
+        self.__port_to_switch = None
+        self.__router = None
 
-    def __init(self):
+        kwargs['wsgi'].register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
+        self.init()
+
+    def init(self):
+        self.__is_updating = False
         self.__update_times = 0
         self.__route_priority = 100  # this will be incremented on each routing
         self.__datapaths: dict[int, controller.Datapath] = {}  # dict[dpid, Datapath]
@@ -76,9 +86,13 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def start_update_path(self):
         self.logger.info('[INFO]started path update')
+        self.__is_updating = True
         self.__update_path()
 
     def __update_path(self):
+        if not self.__is_updating:
+            return
+
         path = self.__router.calc_shortest_path(self.__update_times, self.__UPDATE_INTERVAL_SEC)
         if len(path) == 0:
             self.logger.info("[INFO]no path available")
@@ -157,15 +171,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             opposite = self.__port_to_switch[dpid].pop(port_no)
             self.__router.rm_link(f"s{dpid}", opposite.name)
 
-            # NOTE: This is temporary impl that initializes when all link is removed to run experiment in succession.
-            num_link = 0
-            for pts in self.__port_to_switch.values():
-                num_link += len(pts.keys())
-            if num_link == 0:
-                self.logger.info('[INFO]initialize controller')
-                self.__init()
-                return
-
     @handler.set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
         msg: ofparser.OFPPacketIn = ev.msg
@@ -230,4 +235,9 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
     @wsgi.route('disaster', '/disaster', methods=['POST'])
     def handle_disaster(self, req, **kwargs):
         self.disaster_resistant_network_app.start_update_path()
+        return webob.Response(content_type='text/plain', body='success')
+
+    @wsgi.route('init', '/init', methods=['PUT'])
+    def handle_init(self, req, **kwargs):
+        self.disaster_resistant_network_app.init()
         return webob.Response(content_type='text/plain', body='success')

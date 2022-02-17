@@ -45,6 +45,7 @@ class Experiment(object):
         sleep(450)
 
         self.__net.stop()
+        self.__init_controller()
 
         # cleanup time
         sleep(10)
@@ -81,6 +82,11 @@ class Experiment(object):
         r = requests.post('http://localhost:8080/disaster')
         if r.status_code != 200:
             error("failed to notify disaster to controller: %d %s", r.status_code, r.text)
+
+    def __init_controller(self):
+        r = requests.put('http://localhost:8080/init')
+        if r.status_code != 200:
+            error("failed to initialize controller: %d %s", r.status_code, r.text)
 
     def __network_name(self) -> str:
         return self.__network.name.lower()
