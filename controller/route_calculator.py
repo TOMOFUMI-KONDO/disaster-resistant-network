@@ -205,8 +205,8 @@ class RouteCalculator(object):
 
             # subtract assigned bw from each link on path
             for l in path.links:
-                expected_bw_gbps[l.switch1][l.switch2] = max(expected_bw_gbps[l.switch1][l.switch2] - req_bw, 0)
-                expected_bw_gbps[l.switch2][l.switch1] = max(expected_bw_gbps[l.switch2][l.switch1] - req_bw, 0)
+                expected_bw_gbps[l.switch1][l.switch2] = expected_bw_gbps[l.switch1][l.switch2] - req_bw
+                expected_bw_gbps[l.switch2][l.switch1] = expected_bw_gbps[l.switch2][l.switch1] - req_bw
         print(result)
         return result
 
