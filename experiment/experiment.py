@@ -35,8 +35,8 @@ class Experiment(object):
         self.__start_backup()
         self.__disaster_scheduler.run([
             LinkFailure("s1", 1, "s2", 1, 100),
-            HostFailure("h1-c", "s4", 3, 220),
-            HostFailure("h2-c", "s2", 3, 400),
+            HostFailure("h1c", "s4", 3, 220),
+            HostFailure("h2c", "s2", 3, 400),
         ])
 
         # wait until disaster finishes

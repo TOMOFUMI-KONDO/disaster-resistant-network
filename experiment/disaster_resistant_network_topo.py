@@ -41,10 +41,10 @@ class DisasterResistantNetworkTopo(Topo):
         # NOTE: self.hosts() return hosts that are automatically ordered in alphabetically order
         # add hosts
         hosts = [
-            self.addHost(f"h1-c", ip=f"10.0.0.1", mac=f"00:00:00:00:00:01"),
-            self.addHost(f"h1-s", ip=f"10.0.0.2", mac=f"00:00:00:00:00:02"),
-            self.addHost(f"h2-c", ip=f"10.0.0.3", mac=f"00:00:00:00:00:03"),
-            self.addHost(f"h2-s", ip=f"10.0.0.4", mac=f"00:00:00:00:00:04"),
+            self.addHost(f"h1c", ip=f"10.0.0.1", mac=f"00:00:00:00:00:01"),
+            self.addHost(f"h1s", ip=f"10.0.0.2", mac=f"00:00:00:00:00:02"),
+            self.addHost(f"h2c", ip=f"10.0.0.3", mac=f"00:00:00:00:00:03"),
+            self.addHost(f"h2s", ip=f"10.0.0.4", mac=f"00:00:00:00:00:04"),
         ]
 
         # add links between host and switch
