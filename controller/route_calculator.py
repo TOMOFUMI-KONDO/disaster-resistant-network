@@ -134,8 +134,10 @@ class RouteCalculator(object):
         elapsed_sec = nth_update * update_interval_sec
         next_elapsed_sec = elapsed_sec + update_interval_sec
 
-        expected_bw_gbps: dict[str, dict[str, float]] = {}  # dict[switch1_name, dict[switch2_name, bw]]
-        switch_to_link: dict[str, dict[str, Link]] = {}  # dict[switch1_name, dict[switch2_name, Link]]
+        # dict[switch1_name, dict[switch2_name, bw]]
+        expected_bw_gbps: dict[str, dict[str, float]] = {s.name: {} for s in self.__switches}
+        # dict[switch1_name, dict[switch2_name, Link]]
+        switch_to_link: dict[str, dict[str, Link]] = {s.name: {} for s in self.__switches}
         # calculate expected bandwidths between each connected switches.
         for l in self.__links:
             if l.fail_at_sec == -1 or next_elapsed_sec <= l.fail_at_sec:
@@ -144,11 +146,6 @@ class RouteCalculator(object):
                 ope_ratio = (l.fail_at_sec - elapsed_sec) / update_interval_sec
             else:
                 ope_ratio = 0
-
-            expected_bw_gbps.setdefault(l.switch1, {})
-            expected_bw_gbps.setdefault(l.switch2, {})
-            switch_to_link.setdefault(l.switch1, {})
-            switch_to_link.setdefault(l.switch2, {})
 
             expected_bw = ope_ratio * l.bandwidth_gbps
             expected_bw_gbps[l.switch1][l.switch2] = expected_bw
@@ -169,10 +166,10 @@ class RouteCalculator(object):
         result: list[list[HostClient, HostServer, Path]] = []
         for [client, server, bw] in requested_bandwidth_gbps:
             # bandwidths all between each two switches. dict[switch1_name, dict[switch2_name, bw]]
-            bandwidths: dict[str, dict[str, float]] = {}
+            bandwidths: dict[str, dict[str, float]] = {s.name: {} for s in self.__switches}
 
             # path between each switch pair that has maximum bottleneck bw
-            paths: dict[str, dict[str, Path]] = {}
+            paths: dict[str, dict[str, Path]] = {s.name: {} for s in self.__switches}
 
             for s1 in self.__switches:
                 for s2 in self.__switches:
