@@ -124,7 +124,7 @@ class RouteCalculator(object):
         backup data.
 
         :return:
-        Path:shortest path from src to dst
+        Path:efficient path from src to dst with consideration for disaster and data size
         """
         if nth_update < 0:
             raise ValueError(f"nth_update must be greater than 0, got {nth_update}")
