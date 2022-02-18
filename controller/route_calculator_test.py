@@ -1,10 +1,14 @@
 import unittest
 
+from components import HostClient, HostServer, Path, DirectedLink
+from enums import RoutingAlgorithm
 from route_calculator import RouteCalculator, Switch, Link
 
 
 # FIXME: follow RouteCalculator implementation
 class RouteCalculatorTest(unittest.TestCase):
+    __UPDATE_INTERVAL = 30
+
     @unittest.skip('not implement')
     def test_calc_shortest_path_simple_topology(self):
         """
@@ -94,6 +98,28 @@ class RouteCalculatorTest(unittest.TestCase):
             links[25],
             links[29],
         ])
+
+    def test_calc_takahira_with_simple_topology(self):
+        """
+        h1-s --- s1 --1-- s2 --- h1-c
+        """
+
+        client = HostClient('h1-c', 's2', 100, 20)
+        server = HostServer('h1-s', 's1')
+        link = Link('s1', 's2', 1, 50)
+        router = RouteCalculator(
+            routing_algorithm=RoutingAlgorithm.TAKAHIRA,
+            host_pairs=[[client, server]],
+            switches=[Switch('s1'), Switch('s2')],
+            links=[link]
+        )
+        path = router.calc_shortest_path(0, self.__UPDATE_INTERVAL)
+
+        self.assertEqual(len(path), 1)
+        self.assertEqual(path[0][0], client)
+        self.assertEqual(path[0][1], server)
+        p: Path = path[0][2]
+        self.assertListEqual(p.links, [DirectedLink.from_link(link, 's2', 's1')])
 
 
 if __name__ == '__main__':
