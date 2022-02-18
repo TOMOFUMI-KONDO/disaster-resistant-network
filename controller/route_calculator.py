@@ -204,9 +204,10 @@ class RouteCalculator(object):
             result.append([client, server, path])
 
             # subtract assigned bw from each link on path
+            bottleneck = path.bottleneck_bw_gbps()
             for l in path.links:
-                expected_bw_gbps[l.switch1][l.switch2] = expected_bw_gbps[l.switch1][l.switch2] - req_bw
-                expected_bw_gbps[l.switch2][l.switch1] = expected_bw_gbps[l.switch2][l.switch1] - req_bw
+                expected_bw_gbps[l.switch1][l.switch2] = expected_bw_gbps[l.switch1][l.switch2] - bottleneck
+                expected_bw_gbps[l.switch2][l.switch1] = expected_bw_gbps[l.switch2][l.switch1] - bottleneck
 
         return result
 

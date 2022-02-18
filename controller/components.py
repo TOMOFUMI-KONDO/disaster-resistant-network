@@ -165,6 +165,12 @@ class Path(object):
     def len(self):
         return len(self.links)
 
+    def bottleneck_bw_gbps(self):
+        bw = 10 ** 10
+        for l in self.links:
+            bw = min(l.bandwidth_gbps, bw)
+        return bw
+
     def append(self, link: Link):
         self.links.append(link)
 
