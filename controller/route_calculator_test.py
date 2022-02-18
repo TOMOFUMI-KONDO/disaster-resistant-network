@@ -7,8 +7,6 @@ from route_calculator import RouteCalculator, Switch, Link
 
 # FIXME: follow RouteCalculator implementation
 class RouteCalculatorTest(unittest.TestCase):
-    __UPDATE_INTERVAL = 30
-
     @unittest.skip('not implement')
     def test_calc_shortest_path_simple_topology(self):
         """
@@ -113,13 +111,167 @@ class RouteCalculatorTest(unittest.TestCase):
             switches=[Switch('s1'), Switch('s2')],
             links=[link]
         )
-        path = router.calc_shortest_path(0, self.__UPDATE_INTERVAL)
+        path = router.calc_shortest_path(0, 30)
 
         self.assertEqual(len(path), 1)
         self.assertEqual(path[0][0], client)
         self.assertEqual(path[0][1], server)
         p: Path = path[0][2]
         self.assertListEqual(p.links, [DirectedLink.from_link(link, 's2', 's1')])
+
+    def test_calc_takahira_considering_host_failure(self):
+        """
+        h1-s --- s1 --100-- s2 --- h2-c
+                  |          |
+                  1          10
+                  |          |
+        h2-s --- s3 --100-- s4 --- h1-c
+        """
+
+        # h2 pair should be preferred because it will fail earlier
+        host_pairs = [
+            [HostClient('h1-c', 's4', 1000, 20), HostServer('h1-s', 's1')],
+            [HostClient('h2-c', 's2', 500, 20), HostServer('h2-s', 's3')],
+        ]
+        links = [
+            Link('s1', 's2', 100, 1000),
+            Link('s1', 's3', 1, 1000),
+            Link('s2', 's4', 10, 1000),
+            Link('s3', 's4', 100, 1000),
+        ]
+        router = RouteCalculator(
+            routing_algorithm=RoutingAlgorithm.TAKAHIRA,
+            host_pairs=host_pairs,
+            switches=[Switch('s1'), Switch('s2'), Switch('s3'), Switch('s4')],
+            links=links
+        )
+        paths = router.calc_shortest_path(0, 30)
+
+        self.assertEqual(len(paths), 2)
+        # path for h2 pair
+        self.assertEqual(paths[0][0], host_pairs[1][0])
+        self.assertEqual(paths[0][1], host_pairs[1][1])
+        self.assertListEqual(paths[0][2].links, [
+            DirectedLink.from_link(links[2], 's2', 's4'),
+            DirectedLink.from_link(links[3], 's4', 's3'),
+        ])
+        # path for h1 pair
+        self.assertEqual(paths[1][0], host_pairs[0][0])
+        self.assertEqual(paths[1][1], host_pairs[0][1])
+        self.assertListEqual(paths[1][2].links, [
+            DirectedLink.from_link(links[3], 's4', 's3'),
+            DirectedLink.from_link(links[1], 's3', 's1'),
+        ])
+
+    def test_calc_takahira_considering_link_failure(self):
+        """
+        h1-s --- s1 --100-- s2 --- h2-c
+                 |          |
+                 1          10
+                 |          |
+        h2-s --- s3 --100-- s4 --- h1-c
+        """
+
+        # h2 pair should be preferred because it will fail earlier
+        host_pairs = [
+            [HostClient('h1-c', 's4', 1000, 20), HostServer('h1-s', 's1')],
+            [HostClient('h2-c', 's2', 500, 20), HostServer('h2-s', 's3')],
+        ]
+        links = [
+            Link('s1', 's2', 100, 1000),
+            Link('s1', 's3', 1, 1000),
+            Link('s2', 's4', 10, 1000),
+            Link('s3', 's4', 100, 100),
+        ]
+        router = RouteCalculator(
+            routing_algorithm=RoutingAlgorithm.TAKAHIRA,
+            host_pairs=host_pairs,
+            switches=[Switch('s1'), Switch('s2'), Switch('s3'), Switch('s4')],
+            links=links
+        )
+
+        # case1: before Link(s3-s4) fails
+        paths = router.calc_shortest_path(0, 30)
+
+        self.assertEqual(len(paths), 2)
+        # path for h2 pair
+        self.assertEqual(paths[0][0], host_pairs[1][0])
+        self.assertEqual(paths[0][1], host_pairs[1][1])
+        self.assertListEqual(paths[0][2].links, [
+            DirectedLink.from_link(links[2], 's2', 's4'),
+            DirectedLink.from_link(links[3], 's4', 's3'),
+        ])
+        # path for h1 pair
+        self.assertEqual(paths[1][0], host_pairs[0][0])
+        self.assertEqual(paths[1][1], host_pairs[0][1])
+        self.assertListEqual(paths[1][2].links, [
+            DirectedLink.from_link(links[3], 's4', 's3'),
+            DirectedLink.from_link(links[1], 's3', 's1'),
+        ])
+
+        # case2: after Link(s3-s4) fails
+        paths = router.calc_shortest_path(4, 30)
+
+        self.assertEqual(len(paths), 2)
+        # path for h2 pair
+        self.assertEqual(paths[0][0], host_pairs[1][0])
+        self.assertEqual(paths[0][1], host_pairs[1][1])
+        self.assertListEqual(paths[0][2].links, [
+            DirectedLink.from_link(links[0], 's2', 's1'),
+            DirectedLink.from_link(links[1], 's1', 's3'),
+        ])
+        # path for h1 pair
+        self.assertEqual(paths[1][0], host_pairs[0][0])
+        self.assertEqual(paths[1][1], host_pairs[0][1])
+        self.assertListEqual(paths[1][2].links, [
+            DirectedLink.from_link(links[2], 's4', 's2'),
+            DirectedLink.from_link(links[0], 's2', 's1'),
+        ])
+
+    def test_calc_takahira_considering_data_size(self):
+        """
+        h1-s --- s1 --100-- s2 --- h2-c
+                 |          |
+                 1          10
+                 |          |
+        h2-s --- s3 --100-- s4 --- h1-c
+        """
+
+        # h2 pair should be preferred because it has more data
+        host_pairs = [
+            [HostClient('h1-c', 's4', 1000, 20), HostServer('h1-s', 's1')],
+            [HostClient('h2-c', 's2', 1000, 100), HostServer('h2-s', 's3')],
+        ]
+        links = [
+            Link('s1', 's2', 100, 1000),
+            Link('s1', 's3', 1, 1000),
+            Link('s2', 's4', 10, 1000),
+            Link('s3', 's4', 100, 1000),
+        ]
+        router = RouteCalculator(
+            routing_algorithm=RoutingAlgorithm.TAKAHIRA,
+            host_pairs=host_pairs,
+            switches=[Switch('s1'), Switch('s2'), Switch('s3'), Switch('s4')],
+            links=links
+        )
+
+        paths = router.calc_shortest_path(0, 30)
+
+        self.assertEqual(len(paths), 2)
+        # path for h2 pair
+        self.assertEqual(paths[0][0], host_pairs[1][0])
+        self.assertEqual(paths[0][1], host_pairs[1][1])
+        self.assertListEqual(paths[0][2].links, [
+            DirectedLink.from_link(links[2], 's2', 's4'),
+            DirectedLink.from_link(links[3], 's4', 's3'),
+        ])
+        # path for h1 pair
+        self.assertEqual(paths[1][0], host_pairs[0][0])
+        self.assertEqual(paths[1][1], host_pairs[0][1])
+        self.assertListEqual(paths[1][2].links, [
+            DirectedLink.from_link(links[3], 's4', 's3'),
+            DirectedLink.from_link(links[1], 's3', 's1'),
+        ])
 
 
 if __name__ == '__main__':
