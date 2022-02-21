@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from time import sleep
 
 import requests
@@ -30,12 +32,12 @@ class Experiment(object):
         self.__net.start()
         self.__prepare_backup()
 
-        self.__start_backup()
         # assume that a disaster was predicted
+        pids = self.__start_backup()
         self.__disaster_scheduler.run([
             LinkFailure("s1", 1, "s2", 1, 100),
-            HostFailure("h1c", "s4", 3, 220),
-            HostFailure("h2c", "s2", 3, 400),
+            HostFailure("h1c", pids[0], 220),
+            HostFailure("h2c", pids[1], 400),
         ])
 
         # wait until disaster finishes
@@ -56,9 +58,10 @@ class Experiment(object):
         info('*** waiting to boot server...\n')
         sleep(5)
 
-    def __start_backup(self):
+    def __start_backup(self) -> list[int]:
         info("*** Disaster was predicted and start emergency backup!\n")
 
+        pids = []
         network_name = self.__network_name()
         for hp in self.__host_pairs:
             client = hp['client']
@@ -66,11 +69,14 @@ class Experiment(object):
             chunk = hp['chunk']
             client.cmd(f"./bin/{network_name}/client -addr {server.IP()}:44300 -chunk {chunk} "
                        f"> log/{network_name}/{client.name}.log 2>&1 &")
+            pids.append(int(client.cmd("echo $!")))
 
         # notify start of a disaster
         r = requests.post('http://localhost:8080/disaster')
         if r.status_code != 200:
             error("failed to notify disaster to controller: %d %s", r.status_code, r.text)
+
+        return pids
 
     def __init_controller(self):
         r = requests.put('http://localhost:8080/init')

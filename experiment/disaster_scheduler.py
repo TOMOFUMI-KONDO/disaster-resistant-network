@@ -23,7 +23,7 @@ class DisasterScheduler(object):
             s.vsctl(f"del-port {failure.switch2}-eth{failure.port_switch2}")
         elif isinstance(failure, HostFailure):
             info(f"*** Host {failure.host} failed\n")
-            s.vsctl(f"del-port {failure.neighbor_switch}-eth{failure.port}")
+            s.cmd(f"{failure.host} kill {failure.pid}")
 
 
 class Failure(object):
@@ -41,8 +41,7 @@ class LinkFailure(Failure):
 
 
 class HostFailure(Failure):
-    def __init__(self, host: str, neighbor_switch: str, port: int, fail_at_sec: int):
+    def __init__(self, host: str, pid: int, fail_at_sec: int):
         super(HostFailure, self).__init__(fail_at_sec)
         self.host = host
-        self.neighbor_switch = neighbor_switch
-        self.port = port
+        self.pid = pid
