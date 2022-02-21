@@ -26,7 +26,10 @@ class Experiment(object):
             {'client': hosts[2], 'server': hosts[3], 'chunk': 10 ** 11},
         ]
 
-        self.__disaster_scheduler = DisasterScheduler(self.__net.switches)
+        self.__disaster_scheduler = DisasterScheduler(
+            self.__net.switches,
+            {'h1c': hosts[0], 'h1s': hosts[1], 'h2c': hosts[2], 'h2s': hosts[3]}
+        )
 
     def run(self):
         self.__net.start()

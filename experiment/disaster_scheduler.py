@@ -6,8 +6,9 @@ from mininet.log import info
 
 
 class DisasterScheduler(object):
-    def __init__(self, switches):
+    def __init__(self, switches, hosts):
         self.__switches = switches
+        self.__hosts = hosts
 
     def run(self, failures: list[Failure]):
         for f in failures:
@@ -23,7 +24,7 @@ class DisasterScheduler(object):
             s.vsctl(f"del-port {failure.switch2}-eth{failure.port_switch2}")
         elif isinstance(failure, HostFailure):
             info(f"*** Host {failure.host} failed\n")
-            s.cmd(f"{failure.host} kill {failure.pid}")
+            self.__hosts[failure.host].cmd(f"kill {failure.pid}")
 
 
 class Failure(object):
