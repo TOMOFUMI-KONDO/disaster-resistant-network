@@ -114,17 +114,25 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             server_ip = self.__host_to_ip[server.name]
 
             for l in path.links:
+                # control packet from client to server
                 switch1_dpid = self.__to_dpid(l.switch1)
                 port_switch1_to_switch2 = self.__find_port(switch1_dpid, Switch(l.switch2))
-                match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=server_ip)
-                actions = [ofparser.OFPActionOutput(port_switch1_to_switch2)]
-                self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority, match, actions)
 
+                actions = [ofparser.OFPActionOutput(port_switch1_to_switch2)]
+                self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority,
+                               ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=server_ip), actions)
+                self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority,
+                               ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=server_ip), actions)
+
+                # control packet from server to client
                 switch2_dpid = self.__to_dpid(l.switch2)
                 port_switch2_to_switch1 = self.__find_port(switch2_dpid, Switch(l.switch1))
-                match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=client_ip)
+
                 actions = [ofparser.OFPActionOutput(port_switch2_to_switch1)]
-                self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority, match, actions)
+                self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority,
+                               ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=client_ip), actions)
+                self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority,
+                               ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=client_ip), actions)
 
         self.__route_priority += 1
 

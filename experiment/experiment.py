@@ -28,13 +28,10 @@ class Experiment(object):
 
     def run(self):
         self.__net.start()
-
-        self.__set_stp()
         self.__prepare_backup()
-        self.__net.pingAll()
 
-        # assume that a disaster was detected
         self.__start_backup()
+        # assume that a disaster was predicted
         self.__disaster_scheduler.run([
             LinkFailure("s1", 1, "s2", 1, 100),
             HostFailure("h1c", "s4", 3, 220),
@@ -49,14 +46,6 @@ class Experiment(object):
 
         # cleanup time
         sleep(10)
-
-    # prepare for back up data
-    def __set_stp(self):
-        for s in self.__net.switches:
-            s.vsctl('set bridge', s, 'stp-enable=true')
-
-        info('*** waiting to set STP...\n')
-        sleep(60)
 
     def __prepare_backup(self):
         network_name = self.__network_name()
