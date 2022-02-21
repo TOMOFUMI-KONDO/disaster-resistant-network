@@ -38,7 +38,7 @@ class Experiment(object):
         # assume that a disaster was predicted
         pids = self.__start_backup()
         self.__disaster_scheduler.run([
-            LinkFailure("s1", 1, "s2", 1, 100),
+            LinkFailure("s2", 2, "s4", 1, 100),
             HostFailure("h1c", pids[0], 220),
             HostFailure("h2c", pids[1], 400),
         ])
