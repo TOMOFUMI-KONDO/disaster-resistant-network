@@ -64,6 +64,11 @@ class Experiment(object):
     def __start_backup(self) -> list[int]:
         info("*** Disaster was predicted and start emergency backup!\n")
 
+        # notify start of a disaster
+        r = requests.post('http://localhost:8080/disaster')
+        if r.status_code != 200:
+            error("failed to notify disaster to controller: %d %s", r.status_code, r.text)
+
         pids = []
         network_name = self.__network_name()
         for hp in self.__host_pairs:
@@ -73,11 +78,6 @@ class Experiment(object):
             client.cmd(f"./bin/{network_name}/client -addr {server.IP()}:44300 -chunk {chunk} "
                        f"> log/{network_name}/{client.name}.log 2>&1 &")
             pids.append(int(client.cmd("echo $!")))
-
-        # notify start of a disaster
-        r = requests.post('http://localhost:8080/disaster')
-        if r.status_code != 200:
-            error("failed to notify disaster to controller: %d %s", r.status_code, r.text)
 
         return pids
 
