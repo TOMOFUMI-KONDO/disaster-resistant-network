@@ -209,11 +209,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         # learn a mac address to avoid FLOOD next time.
         self.__mac_to_port[dp.id][eth.src] = in_port
 
-        if eth.dst in self.__mac_to_port[dp.id]:
-            out_port = self.__mac_to_port[dp.id][eth.dst]
-        else:
-            out_port = ofproto.OFPP_FLOOD
-
+        out_port = self.__mac_to_port[dp.id][eth.dst] if eth.dst in self.__mac_to_port[dp.id] else ofproto.OFPP_FLOOD
         actions = [ofparser.OFPActionOutput(out_port)]
 
         if out_port != ofproto.OFPP_FLOOD:
