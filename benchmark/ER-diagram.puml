@@ -1,0 +1,40 @@
+@startuml
+
+hide circle
+skinparam linetype ortho
+
+entity Benchmark {
+  *backup_pair_id: number
+  --
+  received_data_size: number
+  created_at: timestamp
+}
+
+entity BackupPair {
+  *id: number <<generated>>
+  --
+  experiment_id: number <<FK>>
+  data_size: number
+  created_at: timestamp
+}
+
+entity Experiment {
+  *id: number <<generated>>
+  --
+  network_id: number <<FK>>
+  created_at: timestamp
+}
+
+entity Network {
+  *id: number <<generated>>
+  --
+  name: string
+  created_at: timestamp
+  update_dat: timestamp
+}
+
+Benchmark |o--|| BackupPair
+BackupPair }|--|| Experiment
+Experiment }o--|| Network
+
+@enduml
