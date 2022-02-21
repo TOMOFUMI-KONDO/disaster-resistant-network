@@ -56,7 +56,7 @@ class Experiment(object):
             server.cmd(f"./bin/{network_name}/server -v > log/{network_name}/{server.name}.log 2>&1 &")
 
         info('*** waiting to boot server...\n')
-        sleep(5)
+        sleep(10)
 
     def __start_backup(self) -> list[int]:
         info("*** Disaster was predicted and start emergency backup!\n")
