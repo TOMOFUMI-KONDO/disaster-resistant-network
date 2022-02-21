@@ -156,6 +156,27 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         actions = [ofparser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
         self._add_flow(dp, 0, ofparser.OFPMatch(), actions)
 
+        if dp.id == 1:
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__host_to_ip['h1-s'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=self.__host_to_ip['h1-s'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+        if dp.id == 2:
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__host_to_ip['h2-c'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=self.__host_to_ip['h2-c'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+        if dp.id == 3:
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__host_to_ip['h2-s'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=self.__host_to_ip['h2-s'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+        if dp.id == 4:
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=self.__host_to_ip['h1-c'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+            match = ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=self.__host_to_ip['h1-c'])
+            self._add_flow(dp, 50, match, [ofparser.OFPActionOutput(3)])
+
     # TODO: use to create topology dynamically
     # @set_ev_cls(ofp_event.EventOFPPortDescStatsReply)
     # def desc_stats_reply_handler(self, ev):
