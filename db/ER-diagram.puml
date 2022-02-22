@@ -10,9 +10,9 @@ entity Benchmark {
 }
 
 entity BackupPair {
-  *id: number <<generated>>
+  *experiment_id: number <<FK>>
+  *name string
   --
-  experiment_id: number <<FK>>
   data_size_gb: number
 }
 
