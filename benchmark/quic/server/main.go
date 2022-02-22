@@ -20,12 +20,28 @@ const (
 var (
 	addr    string
 	verbose bool
-	total   int64
+
+	expId    int
+	pairName string
+
+	dbCfg = &benchmark.DBConfig{}
+
+	total int64
 )
 
 func init() {
 	flag.StringVar(&addr, "addr", ":44300", "server address")
 	flag.BoolVar(&verbose, "v", false, "weather to show progress of data receiving")
+
+	flag.IntVar(&expId, "exp", -1, "experiment id")
+	flag.StringVar(&pairName, "pair", "", "name of backup host pair")
+
+	flag.StringVar(&dbCfg.User, "dbuser", "root", "database user")
+	flag.StringVar(&dbCfg.Pass, "dbpass", "", "database password")
+	flag.StringVar(&dbCfg.Host, "dbhost", "127.0.0.1", "database host")
+	flag.IntVar(&dbCfg.Port, "dbport", 3306, "database port")
+	flag.StringVar(&dbCfg.DBName, "dbname", "", "database name")
+
 	flag.Parse()
 }
 
@@ -50,7 +66,9 @@ func main() {
 
 func handleSess(sess quic.Session) {
 	defer func() {
-		fmt.Printf("total %s\n", benchmark.FormatSize(total))
+		if err := benchmark.Record(expId, pairName, total, dbCfg); err != nil {
+			log.Fatalf("failed to record benchmark: %v", err)
+		}
 	}()
 
 	stream, err := sess.AcceptStream(context.Background())
