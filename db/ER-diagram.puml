@@ -6,14 +6,14 @@ skinparam linetype ortho
 entity Benchmark {
   *backup_pair_id: number
   --
-  received_data_size: number
+  received_data_size_gb: number
 }
 
 entity BackupPair {
   *id: number <<generated>>
   --
   experiment_id: number <<FK>>
-  data_size: number
+  data_size_gb: number
 }
 
 entity Experiment {
