@@ -1,0 +1,16 @@
+services:
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: disaster_resistant_network
+    ports:
+      - "33060:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/log:/var/log/mysql
+
+volumes:
+  mysql-data:
