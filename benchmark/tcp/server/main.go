@@ -39,7 +39,7 @@ func init() {
 	flag.StringVar(&dbCfg.Pass, "dbpass", "", "database password")
 	flag.StringVar(&dbCfg.Host, "dbhost", "127.0.0.1", "database host")
 	flag.IntVar(&dbCfg.Port, "dbport", 3306, "database port")
-	flag.StringVar(&dbCfg.DBName, "dbname", "", "database name")
+	flag.StringVar(&dbCfg.Database, "dbdb", "", "database name")
 
 	flag.Parse()
 }

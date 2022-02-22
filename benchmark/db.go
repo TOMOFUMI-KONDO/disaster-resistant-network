@@ -9,17 +9,17 @@ import (
 )
 
 type DBConfig struct {
-	User   string
-	Pass   string
-	Host   string
-	Port   int
-	DBName string
+	User     string
+	Pass     string
+	Host     string
+	Port     int
+	Database string
 }
 
 func Record(expId int, pairName string, rcvSize int64, cfg *DBConfig) error {
 	fmt.Printf("expId:%d pairName:%s rcvSize:%s\n", expId, pairName, FormatSize(rcvSize))
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", cfg.User, cfg.Pass, cfg.Host, cfg.Port, cfg.DBName))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", cfg.User, cfg.Pass, cfg.Host, cfg.Port, cfg.Database))
 	if err != nil {
 		return fmt.Errorf("failed to open db: %w", err)
 	}
