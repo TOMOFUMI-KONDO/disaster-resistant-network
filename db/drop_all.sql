@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS benchmarks;
+DROP TABLE IF EXISTS backup_pairs;
+DROP TABLE IF EXISTS experiments;
+DROP TABLE IF EXISTS networks;
