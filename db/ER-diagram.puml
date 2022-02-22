@@ -34,7 +34,7 @@ BackupPair }|--|| Experiment
 Experiment }o--|| Network
 
 note as n1
-・ -> PRIMARY KEY
+● -> PRIMARY KEY
 ◇ -> NOT NULL
 end note
 
