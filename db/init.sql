@@ -26,8 +26,10 @@ CREATE TABLE IF NOT EXISTS backup_pairs
 
 CREATE TABLE IF NOT EXISTS benchmarks
 (
-    backup_pair_id        INT PRIMARY KEY,
+    experiment_id        INT,
+    backup_pari_name VARCHAR(255),
     received_data_size_gb BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (backup_pair_id) REFERENCES backup_pairs (id)
+    PRIMARY KEY (experiment_id, backup_pari_name),
+    FOREIGN KEY (experiment_id, backup_pari_name) REFERENCES backup_pairs (experiment_id, name)
 ) ENGINE = INNODB;

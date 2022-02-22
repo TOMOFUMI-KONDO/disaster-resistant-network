@@ -4,7 +4,8 @@ hide circle
 skinparam linetype ortho
 
 entity Benchmark {
-  *backup_pair_id: number
+  *experiment_id: number <<FK>>
+  *backup_pair_name: string <<FK>>
   --
   received_data_size_gb: number
 }
