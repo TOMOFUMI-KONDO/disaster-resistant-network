@@ -7,14 +7,14 @@ entity Benchmark {
   *experiment_id: number <<FK>>
   *backup_pair_name: string <<FK>>
   --
-  received_data_size_gb: number
+  received_data_size_byte: number
 }
 
 entity BackupPair {
   *experiment_id: number <<FK>>
   *name string
   --
-  data_size_gb: number
+  data_size_byte: number
 }
 
 entity Experiment {
