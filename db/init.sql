@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS networks
     id         INT PRIMARY KEY AUTO_INCREMENT,
     name       VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_atTIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS experiments
@@ -17,19 +17,19 @@ CREATE TABLE IF NOT EXISTS experiments
 CREATE TABLE IF NOT EXISTS backup_pairs
 (
     experiment_id INT,
-    name VARCHAR(255),
+    name          VARCHAR(255),
     data_size_gb  BIGINT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (experiment_id, name),
     FOREIGN KEY (experiment_id) REFERENCES experiments (id)
 ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS benchmarks
 (
-    experiment_id        INT,
-    backup_pari_name VARCHAR(255),
+    experiment_id         INT,
+    backup_pari_name      VARCHAR(255),
     received_data_size_gb BIGINT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (experiment_id, backup_pari_name),
     FOREIGN KEY (experiment_id, backup_pari_name) REFERENCES backup_pairs (experiment_id, name)
 ) ENGINE = INNODB;
