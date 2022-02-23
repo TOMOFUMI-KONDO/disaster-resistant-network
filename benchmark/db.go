@@ -29,13 +29,12 @@ func Record(expId int, pairName string, rcvSize int64, cfg *DBConfig) error {
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
-	stmt, err := db.Prepare(`insert into benchmarks (experiment_id, backup_pair_name, received_data_size_byte) values(?, ?, ?) 
-on duplicate key update received_data_size_byte = ?`)
+	stmt, err := db.Prepare("insert into benchmarks (experiment_id, backup_pair_name, received_data_size_byte) values(?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer stmt.Close()
-	if _, err = stmt.Exec(expId, pairName, rcvSize, rcvSize); err != nil {
+	if _, err = stmt.Exec(expId, pairName, rcvSize); err != nil {
 		return fmt.Errorf("failed to exec insert: %w", err)
 	}
 

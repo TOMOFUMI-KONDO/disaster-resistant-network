@@ -45,6 +45,12 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		if err := benchmark.Record(expId, pairName, total, dbCfg); err != nil {
+			log.Printf("failed to record benchmark: %v", err)
+		}
+	}()
+
 	listener, err := tls.Listen("tcp", addr, benchmark.GenTLSConf())
 	if err != nil {
 		fmt.Printf("failed to listen: %v\n", err)
@@ -62,11 +68,6 @@ func main() {
 
 func handleConn(conn net.Conn) {
 	defer conn.Close()
-	defer func() {
-		if err := benchmark.Record(expId, pairName, total, dbCfg); err != nil {
-			log.Printf("failed to record benchmark: %v", err)
-		}
-	}()
 
 	var logAt int64
 	buf := make([]byte, 1024)
