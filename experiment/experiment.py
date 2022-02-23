@@ -76,7 +76,7 @@ class Experiment(object):
             client = hp['client']
             server = hp['server']
             chunk = hp['chunk']
-            cursor.execute("INSERT INTO backup_pairs (experiment_id, name, data_size_gb) VALUES(%s, %s, %s)",
+            cursor.execute("INSERT INTO backup_pairs (experiment_id, name, data_size_byte) VALUES(%s, %s, %s)",
                            [exp_id, f"{client}-{server}", chunk])
 
         conn.commit()

@@ -29,7 +29,7 @@ func Record(expId int, pairName string, rcvSize int64, cfg *DBConfig) error {
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
-	stmt, err := db.Prepare("INSERT INTO benchmarks (experiment_id, backup_pair_name, received_data_size_gb) VALUES(?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO benchmarks (experiment_id, backup_pair_name, received_data_size_byte) VALUES(?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
