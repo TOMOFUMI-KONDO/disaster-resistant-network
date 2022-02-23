@@ -67,7 +67,7 @@ func main() {
 func handleSess(sess quic.Session) {
 	defer func() {
 		if err := benchmark.Record(expId, pairName, total, dbCfg); err != nil {
-			log.Fatalf("failed to record benchmark: %v", err)
+			log.Printf("failed to record benchmark: %v", err)
 		}
 	}()
 
