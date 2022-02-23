@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from time import sleep
 
 import requests
@@ -15,8 +14,9 @@ from enums import Network
 
 
 class Experiment(object):
-    def __init__(self, network: Network):
+    def __init__(self, network: Network, db_config: dict):
         self.__network = network
+        self.__db_config = db_config
 
         self.__net = Mininet(
             topo=DisasterResistantNetworkTopo(),
@@ -36,11 +36,10 @@ class Experiment(object):
 
     def run(self):
         try:
-            self.__record()
-            return
+            exp_id = self.__record()
 
             self.__net.start()
-            self.__prepare_backup()
+            self.__prepare_backup(exp_id)
 
             # assume that a disaster was predicted
             pids = self.__start_backup()
@@ -59,13 +58,13 @@ class Experiment(object):
             # cleanup time
             sleep(10)
 
-    def __record(self):
+    def __record(self) -> int:
         conn = connector.connect(
-            user=os.getenv('MYSQL_USER', 'root'),
-            password=os.getenv('MYSQL_PASSWORD', 'pass'),
-            host=os.getenv('MYSQL_HOST', '127.0.0.1'),
-            port=os.getenv('MYSQL_PORT', 33060),
-            database=os.getenv('MYSQL_DATABASE', 'disaster_resistant_network')
+            user=self.__db_config['user'],
+            password=self.__db_config['pass'],
+            host=self.__db_config['host'],
+            port=self.__db_config['port'],
+            database=self.__db_config['database']
         )
         cursor = conn.cursor()
 
@@ -83,11 +82,17 @@ class Experiment(object):
         cursor.close()
         conn.close()
 
-    def __prepare_backup(self):
+        return exp_id
+
+    def __prepare_backup(self, exp_id: int):
         net = self.__network.name_lower
         for hp in self.__host_pairs:
+            client = hp['client']
             server = hp['server']
-            server.cmd(f"./bin/{net}/server -v > log/{net}/{server.name}.log 2>&1 &")
+            cfg = self.__db_config
+            server.cmd(f"./bin/{net}/server -v -exp={exp_id} -pair={client}-{server} -dbuser={cfg['user']} "
+                       f"-dbpass={cfg['pass']} -dbhost={cfg['host']} -dbport={cfg['port']} -dbdb={cfg['database']} "
+                       f"> log/{net}/{server.name}.log 2>&1 &")
 
         info('*** waiting to boot server...\n')
         sleep(10)
