@@ -37,6 +37,7 @@ class Experiment(object):
     def run(self):
         try:
             exp_id = self.__record()
+            info(f"*** experiment {exp_id} started!\n")
 
             self.__net.start()
             self.__prepare_backup(exp_id)
