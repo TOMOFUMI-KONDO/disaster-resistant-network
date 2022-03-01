@@ -57,7 +57,7 @@ class Experiment(object):
             self.__init_controller()
 
             # cleanup time
-            sleep(10)
+            sleep(60)
 
     def __record(self) -> int:
         conn = connector.connect(
@@ -112,8 +112,7 @@ class Experiment(object):
             client = hp['client']
             server = hp['server']
             chunk = hp['chunk']
-            client.cmd(f"./bin/{net}/client -addr {server.IP()}:44300 -chunk {chunk} "
-                       f"> log/{net}/{client.name}.log 2>&1 &")
+            client.cmd(f"./bin/{net}/client -addr {server.IP()}:44300 -chunk {chunk} &")
             pids.append(int(client.cmd("echo $!")))
 
         return pids
