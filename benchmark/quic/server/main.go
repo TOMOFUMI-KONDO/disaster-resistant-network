@@ -46,12 +46,6 @@ func init() {
 }
 
 func main() {
-	defer func() {
-		if err := benchmark.Record(expId, pairName, total, dbCfg); err != nil {
-			log.Printf("failed to record benchmark: %v", err)
-		}
-	}()
-
 	// make listener, specifying addr and tls config.
 	// QUIC needs to be used with TLS.
 	// see: https://www.rfc-editor.org/rfc/rfc9001.html
@@ -71,6 +65,12 @@ func main() {
 }
 
 func handleSess(sess quic.Session) {
+	defer func() {
+		if err := benchmark.Record(expId, pairName, total, dbCfg); err != nil {
+			log.Printf("failed to record benchmark: %v", err)
+		}
+	}()
+
 	stream, err := sess.AcceptStream(context.Background())
 	if err != nil {
 		log.Printf("failed to accept stream: %v\n", err)
