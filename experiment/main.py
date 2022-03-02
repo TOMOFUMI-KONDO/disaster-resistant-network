@@ -10,22 +10,22 @@ def main():
     args = parse()
     setLogLevel(args.log)
 
-    for n in [Network.TCP, Network.QUIC]:
-        experiment = Experiment(n, {
-            'user': args.dbuser,
-            'pass': args.dbpass,
-            'host': args.dbhost,
-            'port': args.dbport,
-            'database': args.dbdb,
-        })
-        experiment.run()
+    for _ in range(args.times):
+        for n in [Network.TCP, Network.QUIC]:
+            experiment = Experiment(n, {
+                'user': args.dbuser,
+                'pass': args.dbpass,
+                'host': args.dbhost,
+                'port': args.dbport,
+                'database': args.dbdb,
+            })
+            experiment.run()
 
 
 def parse() -> Namespace:
     parser = ArgumentParser()
-    # parser.add_argument("--size", dest="size", type=int, default=2,
-    #                     help="size of mesh topology, size*size switches will be created.")
     parser.add_argument("--log", dest="log", type=str, default="info", help="log level")
+    parser.add_argument("--times", dest="times", type=int, default=3, help="number of experiments conducted")
     parser.add_argument("--dbuser", dest="dbuser", type=str, default="root", help="database user")
     parser.add_argument("--dbpass", dest="dbpass", type=str, default="", help="database pass")
     parser.add_argument("--dbhost", dest="dbhost", type=str, default="127.0.0.1", help="database host")
