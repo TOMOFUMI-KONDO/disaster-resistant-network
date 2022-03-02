@@ -12,7 +12,7 @@ def main():
 
     for _ in range(args.times):
         for n in [Network.TCP, Network.QUIC]:
-            experiment = Experiment(n, {
+            experiment = Experiment(n, args.size, {
                 'user': args.dbuser,
                 'pass': args.dbpass,
                 'host': args.dbhost,

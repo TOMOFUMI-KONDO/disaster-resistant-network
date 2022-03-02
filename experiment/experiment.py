@@ -14,12 +14,12 @@ from enums import Network
 
 
 class Experiment(object):
-    def __init__(self, network: Network, db_config: dict):
+    def __init__(self, network: Network, size: int, db_config: dict):
         self.__network = network
         self.__db_config = db_config
 
         self.__net = Mininet(
-            topo=DisasterResistantNetworkTopo(),
+            topo=DisasterResistantNetworkTopo(size=size),
             controller=RemoteController("c0", port=6633),
         )
         hosts = self.__net.hosts
@@ -116,7 +116,8 @@ class Experiment(object):
             client = hp['client']
             server = hp['server']
             chunk = hp['chunk']
-            client.cmd(f"./bin/{net}/client -addr {server.IP()}:44300 -chunk {chunk} &")
+            client.cmd(f"./bin/{net}/client -addr {server.IP()}:44300 -chunk {chunk} "
+                       f"> log/{net}/{client.name}.log 2>&1 &")
             pids.append(int(client.cmd("echo $!")))
 
         return pids
