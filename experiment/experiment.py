@@ -100,7 +100,7 @@ class Experiment(object):
                        f"> log/{net}/{server.name}.log 2>&1 &")
 
         info('*** waiting to boot server...\n')
-        sleep(10)
+        sleep(30)
 
     def __start_backup(self) -> list[int]:
         info("*** Disaster was predicted and start emergency backup!\n")
