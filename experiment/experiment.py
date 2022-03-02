@@ -47,8 +47,8 @@ class Experiment(object):
             pids = self.__start_backup()
             self.__disaster_scheduler.run([
                 LinkFailure("s2", 2, "s3", 1, 100),
-                LinkFailure("s4", 3, "s5", 2, 150),
-                LinkFailure("s6", 3, "s9", 2, 200),
+                LinkFailure("s4", 2, "s5", 2, 150),
+                LinkFailure("s6", 3, "s9", 1, 200),
                 HostFailure("h1c", pids[0], 300),
                 HostFailure("h2c", pids[1], 350),
                 HostFailure("h3c", pids[2], 400),
