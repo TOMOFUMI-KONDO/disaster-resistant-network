@@ -154,17 +154,17 @@ class RouteCalculator(object):
             switch_to_link[l.switch2][l.switch1] = l
 
         # calculate requested bw of each host pair
-        requested_bandwidth_gbps: list[list[HostClient, HostServer, float]] = []
+        requested_bandwidths: list[list[HostClient, HostServer, float]] = []
         for [client, server] in self.__host_pairs:
             # TODO: consider whether client and server have already failed
-            requested_bandwidth_gbps.append([client, server, client.datasize_gb / client.fail_at_sec])
+            requested_bandwidths.append([client, server, client.datasize_gb / client.fail_at_sec])
 
         # sort order by bw desc
-        requested_bandwidth_gbps.sort(key=lambda x: x[2], reverse=True)
+        requested_bandwidths.sort(key=lambda x: x[2], reverse=True)
 
         # assign path to each host pair greedily
         result: list[list[HostClient, HostServer, Path]] = []
-        for [client, server, req_bw] in requested_bandwidth_gbps:
+        for [client, server, req_bw] in requested_bandwidths:
             # bandwidths all between each two switches. dict[switch1_name, dict[switch2_name, bw]]
             bandwidths: dict[str, dict[str, float]] = {s.name: {} for s in self.__switches}
 
