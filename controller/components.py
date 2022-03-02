@@ -137,7 +137,7 @@ class Path(object):
             longer = copy.deepcopy(path2)
             shorter = copy.deepcopy(path1)
 
-        for l in longer.links:
+        for l in copy.deepcopy(longer).links:
             if l in shorter.links:
                 shorter.rm(l)
 
