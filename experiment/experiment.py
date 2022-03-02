@@ -26,12 +26,13 @@ class Experiment(object):
 
         self.__host_pairs = [
             {'client': hosts[0], 'server': hosts[1], 'chunk': 10 ** 10 * 2},
-            {'client': hosts[2], 'server': hosts[3], 'chunk': 10 ** 11},
+            {'client': hosts[2], 'server': hosts[3], 'chunk': 10 ** 10 * 5},
+            {'client': hosts[4], 'server': hosts[5], 'chunk': 10 ** 11},
         ]
 
         self.__disaster_scheduler = DisasterScheduler(
             self.__net.switches,
-            {'h1c': hosts[0], 'h1s': hosts[1], 'h2c': hosts[2], 'h2s': hosts[3]}
+            {"h1c": hosts[0], "h1s": hosts[1], "h2c": hosts[2], "h2s": hosts[3], "h3c": hosts[4], "h3s": hosts[5]}
         )
 
     def run(self):
@@ -45,9 +46,12 @@ class Experiment(object):
             # assume that a disaster was predicted
             pids = self.__start_backup()
             self.__disaster_scheduler.run([
-                LinkFailure("s2", 2, "s4", 1, 100),
-                HostFailure("h1c", pids[0], 220),
-                HostFailure("h2c", pids[1], 400),
+                LinkFailure("s2", 2, "s3", 1, 100),
+                LinkFailure("s4", 3, "s5", 2, 150),
+                LinkFailure("s6", 3, "s9", 2, 200),
+                HostFailure("h1c", pids[0], 300),
+                HostFailure("h2c", pids[1], 350),
+                HostFailure("h3c", pids[2], 400),
             ])
 
             # wait until disaster finishes

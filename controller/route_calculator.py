@@ -147,7 +147,7 @@ class RouteCalculator(object):
             else:
                 ope_ratio = 0
 
-            expected_bw = ope_ratio * l.bandwidth_gbps
+            expected_bw = ope_ratio * l.bandwidth_mbps
             expected_bw_gbps[l.switch1][l.switch2] = expected_bw
             expected_bw_gbps[l.switch2][l.switch1] = expected_bw
             switch_to_link[l.switch1][l.switch2] = l

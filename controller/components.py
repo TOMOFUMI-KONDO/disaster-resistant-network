@@ -56,22 +56,22 @@ class Switch(object):
 
 
 class Link(object):
-    def __init__(self, switch1: str, switch2: str, bandwidth_gbps: float, fail_at_sec: int = -1):
+    def __init__(self, switch1: str, switch2: str, bandwidth_mbps: float, fail_at_sec: int = -1):
         """
         :param switch1: name of switch on one side
         :param switch2: name of switch on the other side
-        :param bandwidth_gbps: bandwidth(Gbps). this must be greater than 0.
+        :param bandwidth_mbps: bandwidth[Mbps]. this must be greater than 0.
         :param fail_at_sec: this link will fail after fail_at_sec elapsed. fail_at_sec must be greater or equal to 0.
             -1 means that fail_at_sec has not been determined yet.
         """
         self.switch1 = switch1
         self.switch2 = switch2
-        self.bandwidth_gbps = bandwidth_gbps
+        self.bandwidth_mbps = bandwidth_mbps
         self.fail_at_sec = fail_at_sec
 
     # faster bps, lower cost
     def cost(self):
-        return 10 // self.bandwidth_gbps
+        return 10 // self.bandwidth_mbps
 
     def __repr__(self):
         cls = type(self)
@@ -93,16 +93,16 @@ class DirectedLink(Link):
     def from_link(link: Link, from_: str, to: str):
         if link.switch1 == from_:
             assert link.switch2 == to
-            return DirectedLink(False, link.switch1, link.switch2, link.bandwidth_gbps, link.fail_at_sec)
+            return DirectedLink(False, link.switch1, link.switch2, link.bandwidth_mbps, link.fail_at_sec)
         else:
             assert link.switch1 == to and link.switch2 == from_
-            return DirectedLink(False, link.switch2, link.switch1, link.bandwidth_gbps, link.fail_at_sec)
+            return DirectedLink(False, link.switch2, link.switch1, link.bandwidth_mbps, link.fail_at_sec)
 
-    def __init__(self, direction: bool, switch1: str, switch2: str, bandwidth_gbps: float = -1, fail_at_sec: int = -1):
+    def __init__(self, direction: bool, switch1: str, switch2: str, bandwidth_mbps: float = -1, fail_at_sec: int = -1):
         """
         :param direction: if False, direction is switch1 to switch2. otherwise, it is reverse.
         """
-        super(DirectedLink, self).__init__(switch1, switch2, bandwidth_gbps, fail_at_sec)
+        super(DirectedLink, self).__init__(switch1, switch2, bandwidth_mbps, fail_at_sec)
         self.direction = direction
 
     def __repr__(self):
@@ -142,7 +142,7 @@ class Path(object):
                 shorter.rm(l)
 
             if isinstance(l, DirectedLink):
-                reverse_link = DirectedLink(False, l.switch2, l.switch1, l.bandwidth_gbps, l.fail_at_sec)
+                reverse_link = DirectedLink(False, l.switch2, l.switch1, l.bandwidth_mbps, l.fail_at_sec)
                 if reverse_link in shorter.links:
                     longer.rm(l)
                     shorter.rm(reverse_link)
@@ -168,7 +168,7 @@ class Path(object):
     def bottleneck_bw_gbps(self):
         bw = 10 ** 10
         for l in self.links:
-            bw = min(l.bandwidth_gbps, bw)
+            bw = min(l.bandwidth_mbps, bw)
         return bw
 
     def append(self, link: Link):
