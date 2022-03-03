@@ -128,6 +128,7 @@ class DirectedLink(Link):
 
 # TODO: make links private
 class Path(object):
+    # TODO: test this method
     @staticmethod
     def merge(path1: Path, path2: Path) -> Path:
         if path1.len >= path2.len:
