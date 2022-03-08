@@ -54,7 +54,9 @@ class RouteCalculator(object):
         return self.__links
 
     def add_link(self, link: Link):
-        self.__links.append(link)
+        found = self.__find_link_by_switches(link.switch1, link.switch2)
+        if found is None:
+            self.__links.append(link)
 
     def rm_link(self, switch1: str, switch2: str):
         link = self.__find_link_by_switches(switch1, switch2)
@@ -241,3 +243,8 @@ class RouteCalculator(object):
             return self.__find_switch(link.switch1)
         else:
             return self.__find_switch(link.switch2)
+
+    def reset(self):
+        self.__host_pairs = []
+        self.__switches = []
+        self.__links = []

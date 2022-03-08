@@ -70,8 +70,12 @@ class Link(object):
         self.fail_at_sec = fail_at_sec
 
     # faster bps, lower cost
+    @property
     def cost(self):
         return 10 // self.bandwidth_mbps
+
+    def opposite(self, switch: Switch) -> Switch:
+        return Switch(self.switch2) if switch.name == self.switch1 else Switch(self.switch1)
 
     def __repr__(self):
         cls = type(self)
