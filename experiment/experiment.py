@@ -60,8 +60,8 @@ class Experiment(object):
             self.__net.stop()
             self.__init_controller()
 
-            # cleanup time
-            sleep(60)
+        # cleanup time
+        sleep(60)
 
     def __record(self) -> int:
         conn = connector.connect(
