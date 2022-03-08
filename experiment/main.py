@@ -10,8 +10,15 @@ def main():
     args = parse()
     setLogLevel(args.log)
 
+    networks = []
+    for n in args.networks:
+        if n == Network.TCP.name_lower:
+            networks.append(Network.TCP)
+        elif n == Network.QUIC.name_lower:
+            networks.append(Network.QUIC)
+
     for _ in range(args.times):
-        for n in [Network.TCP, Network.QUIC]:
+        for n in networks:
             experiment = Experiment(n, args.size, {
                 'user': args.dbuser,
                 'pass': args.dbpass,
@@ -27,6 +34,8 @@ def parse() -> Namespace:
     parser.add_argument("--log", dest="log", type=str, default="info", help="log level")
     parser.add_argument("--size", dest="size", type=int, default=3, help="size of topology")
     parser.add_argument("--times", dest="times", type=int, default=3, help="number of experiments conducted")
+    parser.add_argument("--networks", dest="networks", nargs="+", type=str, default=["tcp"],
+                        help="transport protocols to be used in experiment")
     parser.add_argument("--dbuser", dest="dbuser", type=str, default="root", help="database user")
     parser.add_argument("--dbpass", dest="dbpass", type=str, default="", help="database pass")
     parser.add_argument("--dbhost", dest="dbhost", type=str, default="127.0.0.1", help="database host")
