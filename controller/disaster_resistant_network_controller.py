@@ -33,7 +33,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__is_updating = False
         self.__update_times = 0
         self.__route_priority = self.__INITIAL_ROUTE_PRIORITY  # this will be incremented on each routing
-        self.__datapaths: dict[int, controller.Datapath] = {}  # dict[dpid, Datapath]
+        self.__datapaths: list[controller.Datapath] = []
         self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
         self.__host_to_ip: dict[str, str] = {}
         self.__port_to_switch: dict[int, dict[int, Switch]] = {}
@@ -158,9 +158,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
                 port_switch1_to_switch2 = self.__find_port(switch1_dpid, Switch(l.switch2))
 
                 actions = [ofparser.OFPActionOutput(port_switch1_to_switch2)]
-                self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority,
+                self._add_flow(self.__find_dp(switch1_dpid), self.__route_priority,
                                ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=server_ip), actions)
-                self._add_flow(self.__datapaths[switch1_dpid], self.__route_priority,
+                self._add_flow(self.__find_dp(switch1_dpid), self.__route_priority,
                                ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=server_ip), actions)
 
                 # control packet from server to client
@@ -168,9 +168,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
                 port_switch2_to_switch1 = self.__find_port(switch2_dpid, Switch(l.switch1))
 
                 actions = [ofparser.OFPActionOutput(port_switch2_to_switch1)]
-                self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority,
+                self._add_flow(self.__find_dp(switch2_dpid), self.__route_priority,
                                ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=client_ip), actions)
-                self._add_flow(self.__datapaths[switch2_dpid], self.__route_priority,
+                self._add_flow(self.__find_dp(switch2_dpid), self.__route_priority,
                                ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=client_ip), actions)
 
         self.__route_priority += 1
@@ -180,6 +180,11 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
             if v == switch:
                 return k
 
+    def __find_dp(self, dpid: int) -> Optional[controller.Datapath]:
+        for dp in self.__datapaths:
+            if dp.id == dpid:
+                return dp
+
     def __to_dpid(self, switch_name: str) -> int:
         # assume switch name is like "s[0-9]+"
         return int(switch_name[1:])
@@ -187,7 +192,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         dp: controller.Datapath = ev.msg.datapath
-        self.__datapaths[dp.id] = dp
+        self.__datapaths.append(dp)
 
         self.logger.info("[INFO]OFPSwitchFeature: datapath %d", dp.id)
 
