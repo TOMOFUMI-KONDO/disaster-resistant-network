@@ -30,6 +30,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __init__(self, *args, **kwargs):
         super(DisasterResistantNetworkController, self).__init__(*args, **kwargs)
+
         self.__is_updating = False
         self.__update_times = 0
         self.__route_priority = self.__INITIAL_ROUTE_PRIORITY  # this will be incremented on each routing
@@ -40,7 +41,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__route_calculator = RouteCalculator(self.__ROUTING_ALGORITHM)
 
         kwargs['wsgi'].register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
-        self.init()
 
     @property
     def host_pairs(self) -> list[list[HostClient, str, HostServer, str]]:
@@ -61,11 +61,14 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def init(self):
         self.logger.info('[INFO]initializing controller...')
+
         self.__is_updating = False
         self.__update_times = 0
         self.__route_priority = self.__INITIAL_ROUTE_PRIORITY
-        self.__datapaths = {}
+        self.__datapaths = []
         self.__dpid_to_mac_to_port = {}
+        self.__host_to_ip = {}
+        self.__port_to_switch = {}
         self.__route_calculator.reset()
 
     def add_switch(self, switch: Switch, dpid: int, neighbors: dict[int, Link]):
