@@ -68,50 +68,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__mac_to_port = {}
         self.__route_calculator.reset()
 
-        # self.__host_to_ip = {
-        #     'h1c': '10.0.0.1',
-        #     'h1s': '10.0.0.2',
-        #     'h2c': '10.0.0.3',
-        #     'h2s': '10.0.0.4',
-        #     'h3c': '10.0.0.5',
-        #     'h3s': '10.0.0.6',
-        # }
-
-        # # dict[dpid, dict[port, Switch]]
-        # self.__port_to_switch: dict[int, dict[int, Switch]] = {
-        #     1: {1: Switch("s2"), 2: Switch("s4")},
-        #     2: {1: Switch("s1"), 2: Switch("s3"), 3: Switch("s5")},
-        #     3: {1: Switch("s2"), 2: Switch("s6")},
-        #     4: {1: Switch("s1"), 2: Switch("s5"), 3: Switch("s7")},
-        #     5: {1: Switch("s2"), 2: Switch("s4"), 3: Switch("s6"), 4: Switch("s8")},
-        #     6: {1: Switch("s3"), 2: Switch("s5"), 3: Switch("s9")},
-        #     7: {1: Switch("s4"), 2: Switch("s8")},
-        #     8: {1: Switch("s5"), 2: Switch("s7"), 3: Switch("s9")},
-        #     9: {1: Switch("s6"), 2: Switch("s8")}
-        # }
-        # self.__route_calculator = RouteCalculator(
-        #     routing_algorithm=self.__ROUTING_ALGORITHM,
-        #     host_pairs=[[HostClient('h1c', 's3', 300, 20), HostServer('h1s', 's4')],
-        #                 [HostClient('h2c', 's6', 350, 50), HostServer('h2s', 's7')],
-        #                 [HostClient('h3c', 's9', 400, 100), HostServer('h3s', 's1')]],
-        #     switches=[Switch("s1"), Switch("s2"), Switch("s3"), Switch("s4"), Switch("s5"), Switch("s6"), Switch("s7"),
-        #               Switch("s8"), Switch("s9")],
-        #     links=[
-        #         Link("s1", "s2", 779, -1),
-        #         Link("s1", "s4", 605, -1),
-        #         Link("s2", "s3", 861, 100),
-        #         Link("s2", "s5", 748, -1),
-        #         Link("s3", "s6", 813, -1),
-        #         Link("s4", "s5", 550, 150),
-        #         Link("s4", "s7", 662, -1),
-        #         Link("s5", "s6", 610, -1),
-        #         Link("s5", "s6", 681, -1),
-        #         Link("s6", "s9", 524, 200),
-        #         Link("s7", "s8", 786, -1),
-        #         Link("s8", "s9", 753, -1),
-        #     ],
-        # )
-
     def add_switch(self, switch: Switch, dpid: int, neighbors: dict[int, Link]):
         self.__port_to_switch[dpid] = {k: v.opposite(switch) for k, v in neighbors.items()}
 
