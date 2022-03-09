@@ -33,6 +33,13 @@ class RouteCalculator(object):
             self.__links = links
 
     @property
+    def host_pairs(self) -> list[list[HostClient, HostServer]]:
+        return self.__host_pairs
+
+    def add_host_pairs(self, client: HostClient, server: HostServer):
+        self.__host_pairs.append([client, server])
+
+    @property
     def switches(self) -> list[Switch]:
         return self.__switches
 

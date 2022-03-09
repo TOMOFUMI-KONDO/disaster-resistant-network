@@ -35,12 +35,17 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__route_priority = self.__INITIAL_ROUTE_PRIORITY  # this will be incremented on each routing
         self.__datapaths: dict[int, controller.Datapath] = {}  # dict[dpid, Datapath]
         self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
-        self.__host_to_ip = []
+        self.__host_to_ip: dict[str, str] = {}
         self.__port_to_switch: dict[int, dict[int, Switch]] = {}
         self.__route_calculator = RouteCalculator(self.__ROUTING_ALGORITHM)
 
         kwargs['wsgi'].register(DisasterResistantNetworkWsgiController, {self.APP_INSTANCE_NAME: self})
         self.init()
+
+    @property
+    def host_pairs(self) -> list[list[HostClient, str, HostServer, str]]:
+        return list(map(lambda x: [x[0], self.__host_to_ip[x[0].name], x[1], self.__host_to_ip[x[1].name]],
+                        self.__route_calculator.host_pairs))
 
     @property
     def port_to_switch(self):
@@ -113,6 +118,11 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__route_calculator.add_switch(switch)
         for v in neighbors.values():
             self.__route_calculator.add_link(v)
+
+    def add_host_pair(self, client: HostClient, client_ip_address: str, server: HostServer, server_ip_address: str):
+        self.__host_to_ip[client.name] = client_ip_address
+        self.__host_to_ip[server.name] = server_ip_address
+        self.__route_calculator.add_host_pairs(client, server)
 
     def start_update_path(self):
         self.logger.info('[INFO]started path update')
@@ -340,3 +350,32 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
         links = list(map(lambda x: [x.switch1, x.switch2], self.disaster_resistant_network_app.links))
         body = json.dumps({"result": "success", "data": {"links": links}})
         return webob.Response(content_type="application/json", json_body=body)
+
+    @wsgi.route("list host pairs", "/host-pair", methods=["GET"])
+    def handle_list_host_pairs(self, req, **kwargs):
+        host_pairs = list(map(lambda x: {
+            "client": {
+                "name": x[0].name,
+                "neighbor": x[0].neighbor_switch,
+                "fail_at_sec": x[0].fail_at_sec,
+                "datasize_gb": x[0].datasize_gb,
+                "ip_address": x[1]
+            },
+            "server": {
+                "name": x[2].name,
+                "neighbor": x[2].neighbor_switch,
+                "ip_address": x[3]
+            }
+        }, self.disaster_resistant_network_app.host_pairs))
+        body = json.dumps({"result": "success", "data": {"host_pairs": host_pairs}})
+        return webob.Response(content_type="application/json", json_body=body)
+
+    @wsgi.route("add host pair", "/host-pair", methods=["POST"])
+    def handle_add_host_pair(self, req, **kwargs):
+        req_client = req.json["client"]
+        req_server = req.json["server"]
+        client = HostClient(req_client["name"], req_client["neighbor"], req_client["fail_at_sec"],
+                            req_client["datasize_gb"])
+        server = HostServer(req_server["name"], req_server["neighbor"])
+        self.disaster_resistant_network_app.add_host_pair(client, req_client["ip_address"], server,
+                                                          req_server["ip_address"])
