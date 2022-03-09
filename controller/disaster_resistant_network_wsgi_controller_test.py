@@ -54,7 +54,12 @@ class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
         self.assertEqual(200, res.status_code)
         self.assertDictEqual({
             "result": "success",
-            "data": {"links": [["s1", "s2"]]}
+            "data": {"links": [{
+                "switch1": "s1",
+                "switch2": "s2",
+                "bandwidth_mbps": 1000,
+                "fail_at_sec": -1,
+            }]}
         }, json.loads(res.json()))
 
         res = requests.get(self.__URL + "/port-to-switch")

@@ -310,7 +310,12 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
 
     @wsgi.route("list links", "/link", methods=["GET"])
     def handle_list_links(self, req, **kwargs):
-        links = list(map(lambda x: [x.switch1, x.switch2], self.disaster_resistant_network_app.links))
+        links = list(map(lambda x: {
+            "switch1": x.switch1,
+            "switch2": x.switch2,
+            "bandwidth_mbps": x.bandwidth_mbps,
+            "fail_at_sec": x.fail_at_sec
+        }, self.disaster_resistant_network_app.links))
         body = json.dumps({"result": "success", "data": {"links": links}})
         return webob.Response(content_type="application/json", json_body=body)
 
