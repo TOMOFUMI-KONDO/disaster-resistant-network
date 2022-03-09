@@ -34,7 +34,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__update_times = 0
         self.__route_priority = self.__INITIAL_ROUTE_PRIORITY  # this will be incremented on each routing
         self.__datapaths: list[controller.Datapath] = []
-        self.__mac_to_port: dict[int, dict[str, int]] = {}  # dict[dpid, dict[MAC, port]]
+        self.__dpid_to_mac_to_port: dict[int, dict[str, int]] = {}
         self.__host_to_ip: dict[str, str] = {}
         self.__port_to_switch: dict[int, dict[int, Switch]] = {}
         self.__route_calculator = RouteCalculator(self.__ROUTING_ALGORITHM)
@@ -65,7 +65,7 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__update_times = 0
         self.__route_priority = self.__INITIAL_ROUTE_PRIORITY
         self.__datapaths = {}
-        self.__mac_to_port = {}
+        self.__dpid_to_mac_to_port = {}
         self.__route_calculator.reset()
 
     def add_switch(self, switch: Switch, dpid: int, neighbors: dict[int, Link]):
@@ -247,14 +247,16 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
     def __handle_eth(self, eth: ethernet.ethernet, dp: controller.Datapath, in_port: int, buffer_id) \
             -> Optional[list[ofparser.OFPAction]]:
-        self.__mac_to_port.setdefault(dp.id, {})
+        self.__dpid_to_mac_to_port.setdefault(dp.id, {})
         self.logger.info("[INFO]PacketIn ether_type:%s datapath:%s mac_src:%s mac_dst:%s in_port:%d",
                          hex(eth.ethertype), dp.id, eth.src, eth.dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
-        self.__mac_to_port[dp.id][eth.src] = in_port
+        self.__dpid_to_mac_to_port[dp.id][eth.src] = in_port
 
-        out_port = self.__mac_to_port[dp.id][eth.dst] if eth.dst in self.__mac_to_port[dp.id] else ofproto.OFPP_FLOOD
+        out_port = self.__dpid_to_mac_to_port[dp.id][eth.dst] \
+            if eth.dst in self.__dpid_to_mac_to_port[dp.id] \
+            else ofproto.OFPP_FLOOD
         actions = [ofparser.OFPActionOutput(out_port)]
 
         if out_port != ofproto.OFPP_FLOOD:
