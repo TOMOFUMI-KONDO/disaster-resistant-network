@@ -78,10 +78,21 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         for v in neighbors.values():
             self.__route_calculator.add_link(v)
 
-    def add_host_pair(self, client: HostClient, client_ip_address: str, server: HostServer, server_ip_address: str):
-        self.__host_to_ip[client.name] = client_ip_address
-        self.__host_to_ip[server.name] = server_ip_address
+    def add_host_pair(self, client: HostClient, client_ip: str, client_port: int,
+                      server: HostServer, server_ip: str, server_port: int):
+        self.__host_to_ip[client.name] = client_ip
+        self.__host_to_ip[server.name] = server_ip
+
         self.__route_calculator.add_host_pairs(client, server)
+
+        self.__add_flow_for_host(self.__find_dp(self.__to_dpid(client.neighbor_switch)), client_ip, client_port)
+        self.__add_flow_for_host(self.__find_dp(self.__to_dpid(server.neighbor_switch)), server_ip, server_port)
+
+    def __add_flow_for_host(self, dp: controller.Datapath, ip: str, port: int, priority=50):
+        self._add_flow(dp, priority, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
+                       [ofparser.OFPActionOutput(port)])
+        self._add_flow(dp, priority, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
+                       [ofparser.OFPActionOutput(port)])
 
     def start_update_path(self):
         self.logger.info('[INFO]started path update')
@@ -158,43 +169,6 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         # send PacketIn to controller when receive unknown packet
         actions = [ofparser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
         self._add_flow(dp, 0, ofparser.OFPMatch(), actions)
-
-        if dp.id == 3:
-            ip = self.__host_to_ip["h1c"]
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
-                           [ofparser.OFPActionOutput(3)])
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
-                           [ofparser.OFPActionOutput(3)])
-        if dp.id == 4:
-            ip = self.__host_to_ip["h1s"]
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
-                           [ofparser.OFPActionOutput(4)])
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
-                           [ofparser.OFPActionOutput(4)])
-        if dp.id == 6:
-            ip = self.__host_to_ip["h2c"]
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
-                           [ofparser.OFPActionOutput(4)])
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
-                           [ofparser.OFPActionOutput(4)])
-        if dp.id == 7:
-            ip = self.__host_to_ip["h2s"]
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
-                           [ofparser.OFPActionOutput(3)])
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
-                           [ofparser.OFPActionOutput(3)])
-        if dp.id == 9:
-            ip = self.__host_to_ip["h3c"]
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
-                           [ofparser.OFPActionOutput(3)])
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
-                           [ofparser.OFPActionOutput(3)])
-        if dp.id == 1:
-            ip = self.__host_to_ip["h3s"]
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
-                           [ofparser.OFPActionOutput(3)])
-            self._add_flow(dp, 50, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP, arp_tpa=ip),
-                           [ofparser.OFPActionOutput(3)])
 
     # TODO: use to create topology dynamically
     # @set_ev_cls(ofp_event.EventOFPPortDescStatsReply)
@@ -348,5 +322,5 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
         client = HostClient(req_client["name"], req_client["neighbor"], req_client["fail_at_sec"],
                             req_client["datasize_gb"])
         server = HostServer(req_server["name"], req_server["neighbor"])
-        self.disaster_resistant_network_app.add_host_pair(client, req_client["ip_address"], server,
-                                                          req_server["ip_address"])
+        self.disaster_resistant_network_app.add_host_pair(client, req_client["ip_address"], req_client["port"],
+                                                          server, req_server["ip_address"], req_server["port"])

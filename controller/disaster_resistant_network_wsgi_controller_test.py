@@ -4,6 +4,21 @@ import unittest
 from time import sleep
 
 import requests
+from mininet import net, node, topo, link
+
+
+class DisasterResistantNetworkWsgiControllerTestTopo(topo.Topo):
+    def build(self, *args, **params):
+        # add switches
+        self.addSwitch("s1", dpid="1")
+        self.addSwitch("s2", dpid="2")
+        self.addLink("s1", "s2", cls=link.TCLink, bw=1000)
+
+        # add hosts
+        self.addHost("h1c", ip="10.0.0.1", mac="00:00:00:00:00:01")
+        self.addLink("h1c", "s1", cls=link.TCLink, bw=1000)
+        self.addHost("h1s", ip="10.0.0.2", mac="00:00:00:00:00:02")
+        self.addLink("h1s", "s2", cls=link.TCLink, bw=1000)
 
 
 class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
@@ -11,9 +26,16 @@ class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
 
     def setUp(self):
         self.__ryu_manager = subprocess.Popen(["ryu-manager", "disaster_resistant_network_controller.py"])
-        sleep(3)
+        sleep(5)
+
+        self.__mininet = net.Mininet(
+            topo=DisasterResistantNetworkWsgiControllerTestTopo(),
+            controller=node.RemoteController("c0", port=6633),
+        )
+        self.__mininet.start()
 
     def tearDown(self):
+        self.__mininet.stop()
         self.__ryu_manager.kill()
 
     def testComponents(self):
@@ -79,12 +101,14 @@ class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
                 "neighbor": "s1",
                 "fail_at_sec": 100,
                 "datasize_gb": 10,
-                "ip_address": "10.0.0.1"
+                "ip_address": "10.0.0.1",
+                "port": 2
             },
             "server": {
                 "name": "h1s",
                 "neighbor": "s2",
-                "ip_address": "10.0.0.2"
+                "ip_address": "10.0.0.2",
+                "port": 2
             }
         }))
         self.assertEqual(200, res.status_code)
