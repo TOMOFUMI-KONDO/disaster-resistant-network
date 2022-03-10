@@ -33,44 +33,31 @@ class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
             controller=node.RemoteController("c0", port=6633),
         )
         self.__mininet.start()
+        sleep(10)
 
     def tearDown(self):
         self.__mininet.stop()
         self.__ryu_manager.kill()
 
     def testComponents(self):
-        # add s1
-        res = requests.post(self.__URL + "/switch", data=json.dumps({
-            "name": "s1",
-            "dpid": 1,
-            "neighbors": [{
-                "port": 1,
-                "name": "s2",
-                "bandwidth_mbps": 1000,
-                "fail_at_sec": -1,
-            }]
-        }))
-        self.assertEqual(200, res.status_code)
-
-        # add s2
-        res = requests.post(self.__URL + "/switch", data=json.dumps({
-            "name": "s2",
-            "dpid": 2,
-            "neighbors": [{
-                "port": 1,
-                "name": "s1",
-                "bandwidth_mbps": 1000,
-                "fail_at_sec": -1,
-            }]
-        }))
-        self.assertEqual(200, res.status_code)
-
         res = requests.get(self.__URL + "/switch")
         self.assertEqual(200, res.status_code)
-        self.assertDictEqual({
-            "result": "success",
-            "data": {"switches": ["s1", "s2"]}
-        }, json.loads(res.json()))
+        switches = json.loads(res.json())["data"]["switches"]
+        self.assertListEqual(["s1", "s2"], sorted(switches))
+
+        # add link between switches
+        res = requests.post(self.__URL + "/link", data=json.dumps({
+            "switch1": {
+                "name": "s1",
+                "port": 1,
+            },
+            "switch2": {
+                "name": "s2",
+                "port": 1,
+            },
+            "bandwidth_mbps": 1000,
+        }))
+        self.assertEqual(200, res.status_code)
 
         res = requests.get(self.__URL + "/link")
         self.assertEqual(200, res.status_code)
@@ -99,8 +86,6 @@ class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
             "client": {
                 "name": "h1c",
                 "neighbor": "s1",
-                "fail_at_sec": 100,
-                "datasize_gb": 10,
                 "ip_address": "10.0.0.1",
                 "port": 2
             },
@@ -123,8 +108,60 @@ class DisasterResistantNetworkWsgiControllerTest(unittest.TestCase):
                         "client": {
                             "name": "h1c",
                             "neighbor": "s1",
-                            "fail_at_sec": 100,
-                            "datasize_gb": 10,
+                            "fail_at_sec": -1,
+                            "datasize_gb": -1,
+                            "ip_address": "10.0.0.1"
+                        },
+                        "server": {
+                            "name": "h1s",
+                            "neighbor": "s2",
+                            "ip_address": "10.0.0.2"
+                        }
+                    }
+                ]
+            }
+        }, json.loads(res.json()))
+
+        # register link fail-time
+        req = requests.put(self.__URL + "/link", data=json.dumps({
+            "switch1": "s1",
+            "switch2": "s2",
+            "fail_at_sec": 100
+        }))
+        self.assertEqual(200, req.status_code)
+
+        res = requests.get(self.__URL + "/link")
+        self.assertEqual(200, res.status_code)
+        self.assertDictEqual({
+            "result": "success",
+            "data": {"links": [{
+                "switch1": "s1",
+                "switch2": "s2",
+                "bandwidth_mbps": 1000,
+                "fail_at_sec": 100,
+            }]}
+        }, json.loads(res.json()))
+
+        # update host client
+        res = requests.put(self.__URL + "/host-client", data=json.dumps({
+            "client": "h1c",
+            "fail_at_sec": 1000,
+            "datasize_gb": 100
+        }))
+        self.assertEqual(200, res.status_code)
+
+        res = requests.get(self.__URL + "/host-pair")
+        self.assertEqual(200, res.status_code)
+        self.assertDictEqual({
+            "result": "success",
+            "data": {
+                "host_pairs": [
+                    {
+                        "client": {
+                            "name": "h1c",
+                            "neighbor": "s1",
+                            "fail_at_sec": 1000,
+                            "datasize_gb": 100,
                             "ip_address": "10.0.0.1"
                         },
                         "server": {

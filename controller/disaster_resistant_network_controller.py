@@ -71,12 +71,19 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
         self.__port_to_switch = {}
         self.__route_calculator.reset()
 
-    def add_switch(self, switch: Switch, dpid: int, neighbors: dict[int, Link]):
-        self.__port_to_switch[dpid] = {k: v.opposite(switch) for k, v in neighbors.items()}
+    def add_link(self, link: Link, s1_port: int, s2_port: int):
+        self.__route_calculator.add_link(link)
 
-        self.__route_calculator.add_switch(switch)
-        for v in neighbors.values():
-            self.__route_calculator.add_link(v)
+        s1_dpid = self.__to_dpid(link.switch1)
+        self.__port_to_switch.setdefault(s1_dpid, {})
+        self.__port_to_switch[s1_dpid][s1_port] = Switch(link.switch2)
+
+        s2_dpid = self.__to_dpid(link.switch2)
+        self.__port_to_switch.setdefault(s2_dpid, {})
+        self.__port_to_switch[s2_dpid][s2_port] = Switch(link.switch1)
+
+    def register_link_fail_time(self, switch1: str, switch2: str, fail_at_sec: int):
+        self.__route_calculator.register_link_fail_time(switch1, switch2, fail_at_sec)
 
     def add_host_pair(self, client: HostClient, client_ip: str, client_port: int,
                       server: HostServer, server_ip: str, server_port: int):
@@ -87,6 +94,9 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
 
         self.__add_flow_for_host(self.__find_dp(self.__to_dpid(client.neighbor_switch)), client_ip, client_port)
         self.__add_flow_for_host(self.__find_dp(self.__to_dpid(server.neighbor_switch)), server_ip, server_port)
+
+    def update_host_client(self, client: str, fail_at_sec: int, datasize_gb: int):
+        self.__route_calculator.update_host_client(client, fail_at_sec, datasize_gb)
 
     def __add_flow_for_host(self, dp: controller.Datapath, ip: str, port: int, priority=50):
         self._add_flow(dp, priority, ofparser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ip),
@@ -162,9 +172,10 @@ class DisasterResistantNetworkController(app_manager.RyuApp, FlowAddable):
     @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         dp: controller.Datapath = ev.msg.datapath
-        self.__datapaths.append(dp)
-
         self.logger.info("[INFO]OFPSwitchFeature: datapath %d", dp.id)
+
+        self.__datapaths.append(dp)
+        self.__route_calculator.add_switch(Switch(f"s{dp.id}"))
 
         # send PacketIn to controller when receive unknown packet
         actions = [ofparser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
@@ -277,14 +288,6 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
         body = json.dumps({"result": "success", "data": {"switches": switches}})
         return webob.Response(content_type="application/json", json_body=body)
 
-    @wsgi.route("add switch", "/switch", methods=["POST"])
-    def handle_add_switch(self, req, **kwargs):
-        switch = Switch(req.json["name"])
-        dpid = req.json["dpid"]
-        neighbors = {n["port"]: Link(switch.name, n["name"], n["bandwidth_mbps"], n["fail_at_sec"])
-                     for n in req.json["neighbors"]}
-        self.disaster_resistant_network_app.add_switch(switch, dpid, neighbors)
-
     @wsgi.route("list links", "/link", methods=["GET"])
     def handle_list_links(self, req, **kwargs):
         links = list(map(lambda x: {
@@ -295,6 +298,21 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
         }, self.disaster_resistant_network_app.links))
         body = json.dumps({"result": "success", "data": {"links": links}})
         return webob.Response(content_type="application/json", json_body=body)
+
+    @wsgi.route("add link", "/link", methods=["POST"])
+    def handle_add_link(self, req, **kwargs):
+        s1 = req.json["switch1"]
+        s2 = req.json["switch2"]
+        link = Link(s1["name"], s2["name"], req.json["bandwidth_mbps"])
+
+        self.disaster_resistant_network_app.add_link(link, s1["port"], s2["port"])
+        return webob.Response(content_type="text/plain", body="success")
+
+    @wsgi.route("register link fail time", "/link", methods=["PUT"])
+    def handle_register_link_fail_time(self, req, **kwargs):
+        self.disaster_resistant_network_app.register_link_fail_time(req.json["switch1"], req.json["switch2"],
+                                                                    req.json["fail_at_sec"])
+        return webob.Response(content_type="text/plain", body="success")
 
     @wsgi.route("list host pairs", "/host-pair", methods=["GET"])
     def handle_list_host_pairs(self, req, **kwargs):
@@ -319,8 +337,15 @@ class DisasterResistantNetworkWsgiController(wsgi.ControllerBase):
     def handle_add_host_pair(self, req, **kwargs):
         req_client = req.json["client"]
         req_server = req.json["server"]
-        client = HostClient(req_client["name"], req_client["neighbor"], req_client["fail_at_sec"],
-                            req_client["datasize_gb"])
+        client = HostClient(req_client["name"], req_client["neighbor"])
         server = HostServer(req_server["name"], req_server["neighbor"])
+
         self.disaster_resistant_network_app.add_host_pair(client, req_client["ip_address"], req_client["port"],
                                                           server, req_server["ip_address"], req_server["port"])
+        return webob.Response(content_type="text/plain", body="success")
+
+    @wsgi.route("update host client", "/host-client", methods=["PUT"])
+    def handle_update_host_pair(self, req, **kwargs):
+        self.disaster_resistant_network_app.update_host_client(req.json["client"], req.json["fail_at_sec"],
+                                                               req.json["datasize_gb"])
+        return webob.Response(content_type="text/plain", body="success")

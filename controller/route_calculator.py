@@ -39,6 +39,26 @@ class RouteCalculator(object):
     def add_host_pairs(self, client: HostClient, server: HostServer):
         self.__host_pairs.append([client, server])
 
+    def update_host_client(self, client: str, fail_at_sec: int, datasize_gb: int):
+        index = self.__find_host_pair_by_client(client)
+        if index is None:
+            return
+
+        host_pair = self.host_pairs[index]
+        client = host_pair[0]
+        client.fail_at_sec = fail_at_sec
+        client.datasize_gb = datasize_gb
+        server = host_pair[1]
+
+        self.__host_pairs.pop(index)
+        self.add_host_pairs(client, server)
+
+    def __find_host_pair_by_client(self, client: str) -> Optional[int]:
+        for i in range(len(self.host_pairs)):
+            host_pair = self.host_pairs[i]
+            if host_pair[0].name == client:
+                return i
+
     @property
     def switches(self) -> list[Switch]:
         return self.__switches
@@ -64,6 +84,14 @@ class RouteCalculator(object):
         found = self.__find_link_by_switches(link.switch1, link.switch2)
         if found is None:
             self.__links.append(link)
+
+    def register_link_fail_time(self, switch1: str, switch2: str, fail_at_sec: int):
+        link = self.__find_link_by_switches(switch1, switch2)
+        link.fail_at_sec = fail_at_sec
+
+        # replace link with one with fail_at_sec
+        self.rm_link(switch1, switch2)
+        self.add_link(link)
 
     def rm_link(self, switch1: str, switch2: str):
         link = self.__find_link_by_switches(switch1, switch2)

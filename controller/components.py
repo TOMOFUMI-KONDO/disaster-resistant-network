@@ -21,11 +21,11 @@ class Host(object):
 
 
 class HostClient(Host):
-    def __init__(self, name: str, neighbor_switch: str, fail_at_sec: int, datasize_gb: int):
+    def __init__(self, name: str, neighbor_switch: str, fail_at_sec: int = -1, datasize_gb: int = -1):
         """
         :param fail_at_sec: this host will fail after this time has elapsed. must be greater than or equal to 0.
-            -1 means that fail_at_sec is unknown
-        :param datasize_gb: size(GB) of data that is backed up.
+            -1 means that fail_at_sec is unknown.
+        :param datasize_gb: size(GB) of data that is backed up. -1 means that datasize is unknown.
         """
         super(HostClient, self).__init__(name, neighbor_switch)
         self.fail_at_sec = fail_at_sec
