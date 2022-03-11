@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from time import sleep
+from typing import Optional
 
 import requests
 from mininet.log import info, error
@@ -14,6 +16,8 @@ from enums import Network
 
 
 class Experiment(object):
+    __URL = "http://localhost:8080"
+
     def __init__(self, network: Network, size: int, db_config: dict):
         self.__network = network
         self.__db_config = db_config
@@ -51,14 +55,19 @@ class Experiment(object):
 
             # assume that a disaster was predicted
             pids = self.__start_backup()
-            self.__disaster_scheduler.run([
+
+            link_failures = [
                 LinkFailure("s2", 2, "s3", 1, 100),
                 LinkFailure("s4", 2, "s5", 2, 150),
                 LinkFailure("s6", 3, "s9", 1, 200),
+            ]
+            host_failures = [
                 HostFailure("h1c", pids[0], 300),
                 HostFailure("h2c", pids[1], 350),
                 HostFailure("h3c", pids[2], 400),
-            ])
+            ]
+            self.__register_disaster_info(link_failures, host_failures)
+            self.__disaster_scheduler.run([*link_failures, *host_failures])
 
             # wait until disaster finishes
             sleep(450)
@@ -128,7 +137,26 @@ class Experiment(object):
 
         return pids
 
+    def __register_disaster_info(self, link_failures: list[LinkFailure], host_failures: list[HostFailure]):
+        for l in link_failures:
+            requests.put(self.__URL + "/link", data=json.dumps({
+                "switch1": l.switch1,
+                "switch2": l.switch2,
+                "fail_at_sec": l.fail_at_sec,
+            }))
+        for h in host_failures:
+            requests.put(self.__URL + "/host-client", data=json.dumps({
+                "client": h.host,
+                "fail_at_sec": h.fail_at_sec,
+                "datasize_gb": self.__find_host_pair_by_client(h.host)["chunk"],
+            }))
+
+    def __find_host_pair_by_client(self, client: str) -> Optional[dict]:
+        for h in self.__host_pairs:
+            if h["client"].name == client:
+                return h
+
     def __init_controller(self):
-        r = requests.put('http://localhost:8080/init')
+        r = requests.put(self.__URL + "/init")
         if r.status_code != 200:
             error("failed to initialize controller: %d %s", r.status_code, r.text)
