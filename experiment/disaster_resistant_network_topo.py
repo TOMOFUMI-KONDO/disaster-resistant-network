@@ -13,8 +13,8 @@ class DisasterResistantNetworkTopo(Topo):
     __URL = "http://localhost:8080"
 
     def __init__(self, *args, **params):
-        super(DisasterResistantNetworkTopo, self).__init__(args, params)
         self.__switch_port_counts = {}
+        super(DisasterResistantNetworkTopo, self).__init__(*args, **params)
 
     def build(self, *args, **params):
         """
