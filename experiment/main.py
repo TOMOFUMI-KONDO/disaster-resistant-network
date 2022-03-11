@@ -33,7 +33,7 @@ def parse() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--log", dest="log", type=str, default="info", help="log level")
     parser.add_argument("--size", dest="size", type=int, default=3, help="size of topology")
-    parser.add_argument("--times", dest="times", type=int, default=3, help="number of experiments conducted")
+    parser.add_argument("--times", dest="times", type=int, default=1, help="number of experiments conducted")
     parser.add_argument("--networks", dest="networks", nargs="+", type=str, default=["tcp"],
                         help="transport protocols to be used in experiment")
     parser.add_argument("--dbuser", dest="dbuser", type=str, default="root", help="database user")
