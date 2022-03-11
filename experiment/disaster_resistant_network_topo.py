@@ -14,6 +14,8 @@ class DisasterResistantNetworkTopo(Topo):
 
     def __init__(self, *args, **params):
         self.__switch_port_counts = {}
+        self.__links = []
+        self.__host_pairs = []
         super(DisasterResistantNetworkTopo, self).__init__(*args, **params)
 
     def build(self, *args, **params):
@@ -44,14 +46,12 @@ class DisasterResistantNetworkTopo(Topo):
                     right = switches[size * i + j + 1]
                     self.__switch_port_counts[switch] += 1
                     self.__switch_port_counts[right] += 1
-
                     self.__add_link(switch, self.__switch_port_counts[switch], right, self.__switch_port_counts[right])
 
                 if i != size - 1:
                     bottom = switches[size * (i + 1) + j]
                     self.__switch_port_counts[switch] += 1
                     self.__switch_port_counts[bottom] += 1
-
                     self.__add_link(switch, self.__switch_port_counts[switch],
                                     bottom, self.__switch_port_counts[bottom])
 
@@ -93,20 +93,22 @@ class DisasterResistantNetworkTopo(Topo):
         self.addLink(switch1, switch2, cls=cls, bw=bw)
 
         # register link to controller
-        requests.post(self.__URL + "/link", data=json.dumps({
+        self.__links.append({
             "switch1": {"name": switch1, "port": switch1_port},
             "switch2": {"name": switch2, "port": switch2_port},
             "bandwidth_mbps": bw,
-        }))
+        })
 
     def __add_host_pair(self, client_name: str, client_port: int, client_ip: str, client_mac: str, client_neighbor: str,
                         server_name: str, server_port: int, server_ip: str, server_mac: str, server_neighbor: str):
+        # add host to mininet
         self.addHost(client_name, ip=client_ip, mac=client_mac)
         self.addHost(server_name, ip=server_ip, mac=server_mac)
         self.addLink(client_name, client_neighbor)
         self.addLink(server_name, server_neighbor)
 
-        requests.post(self.__URL + "/host-pair", data=json.dumps({
+        # register host-pair to controller
+        self.__host_pairs.append({
             "client": {
                 "name": client_name,
                 "port": client_port,
@@ -119,10 +121,18 @@ class DisasterResistantNetworkTopo(Topo):
                 "ip_address": server_ip,
                 "neighbor": server_neighbor
             }
-        }))
+        })
 
     def __rand_bandwidth(self):
         return random.randint(self.__BW_MIN_MBPS, self.__BW_MAX_MBPS)
+
+    def register_links(self):
+        for l in self.__links:
+            requests.post(self.__URL + "/link", data=json.dumps(l))
+
+    def register_host_pairs(self):
+        for h in self.__host_pairs:
+            requests.post(self.__URL + "/host-pair", data=json.dumps(h))
 
 
 topos = {"disaster_resistant_network__topo": lambda: DisasterResistantNetworkTopo()}

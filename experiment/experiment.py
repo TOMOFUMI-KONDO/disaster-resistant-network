@@ -41,6 +41,12 @@ class Experiment(object):
             info(f"*** experiment {exp_id} started!\n")
 
             self.__net.start()
+            sleep(10)  # wait controller to receive switch feature message
+
+            topo: DisasterResistantNetworkTopo = self.__net.topo
+            topo.register_links()
+            topo.register_host_pairs()
+
             self.__prepare_backup(exp_id)
 
             # assume that a disaster was predicted
