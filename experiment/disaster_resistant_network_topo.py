@@ -46,7 +46,6 @@ class DisasterResistantNetworkTopo(Topo):
                     self.__switch_port_counts[right] += 1
 
                     self.__add_link(switch, self.__switch_port_counts[switch], right, self.__switch_port_counts[right])
-                    self.addLink(switch, right, cls=TCLink, bw=self.__rand_bandwidth())
 
                 if i != size - 1:
                     bottom = switches[size * (i + 1) + j]
@@ -55,7 +54,6 @@ class DisasterResistantNetworkTopo(Topo):
 
                     self.__add_link(switch, self.__switch_port_counts[switch],
                                     bottom, self.__switch_port_counts[bottom])
-                    self.addLink(switch, bottom, cls=TCLink, bw=self.__rand_bandwidth())
 
         # NOTE: assume size >= 3
         # NOTE: self.hosts() return hosts that are automatically ordered in alphabetically order
