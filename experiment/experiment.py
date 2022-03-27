@@ -133,6 +133,7 @@ class Experiment(object):
             chunk = hp['chunk']
             client.cmd(f"./bin/{net}/client -addr {server.IP()}:44300 -chunk {chunk} "
                        f"> log/{net}/{client.name}.log 2>&1 &")
+
             pids.append(int(client.cmd("echo $!")))
 
         return pids
@@ -144,11 +145,16 @@ class Experiment(object):
                 "switch2": l.switch2,
                 "fail_at_sec": l.fail_at_sec,
             }))
+
         for h in host_failures:
+            host_pair = self.__find_host_pair_by_client(h.host)
+            if host_pair is None:
+                raise Exception(f"host pair whose client is {h.host} was not found.")
+
             requests.put(self.__URL + "/host-client", data=json.dumps({
                 "client": h.host,
                 "fail_at_sec": h.fail_at_sec,
-                "datasize_gb": self.__find_host_pair_by_client(h.host)["chunk"],
+                "datasize_gb": host_pair["chunk"],
             }))
 
     def __find_host_pair_by_client(self, client: str) -> Optional[dict]:

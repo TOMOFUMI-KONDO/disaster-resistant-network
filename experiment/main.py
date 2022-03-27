@@ -16,6 +16,8 @@ def main():
             networks.append(Network.TCP)
         elif n == Network.QUIC.name_lower:
             networks.append(Network.QUIC)
+        else:
+            raise ValueError(f"network {n} is invalid.")
 
     for _ in range(args.times):
         for n in networks:
