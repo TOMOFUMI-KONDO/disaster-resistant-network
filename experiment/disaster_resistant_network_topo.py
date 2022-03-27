@@ -35,7 +35,7 @@ class DisasterResistantNetworkTopo(Topo):
             for j in range(size):
                 dpid = size * i + j + 1
                 name = f"s{dpid}"
-                switches.append(self.addSwitch(name, dpid=str(dpid)))
+                switches.append(self.addSwitch(name, dpid=hex(dpid)[2:]))
                 self.__switch_port_counts[name] = 0
 
         # add links between switches
