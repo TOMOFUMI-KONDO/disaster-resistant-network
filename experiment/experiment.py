@@ -57,11 +57,18 @@ class Experiment(object):
             # assume that a disaster was predicted
             pids = self.__start_backup()
 
-            link_failures = list(map(
-                lambda l: LinkFailure(l["switch1"]["name"], l["switch1"]["port"],
-                                      l["switch2"]["name"], l["switch2"]["port"], random.randint(60, 600)),
-                topo.rand_links((len(topo.links()) - len(self.__host_pairs) * 2) // 2),
-            ))
+            link_failures = [
+                LinkFailure("s4", 2, "s5", 1, self.__rand_link_fail_time()),
+                LinkFailure("s8", 3, "s9", 2, self.__rand_link_fail_time()),
+                LinkFailure("s9", 4, "s14", 1, self.__rand_link_fail_time()),
+                LinkFailure("s10", 3, "s15", 1, self.__rand_link_fail_time()),
+                LinkFailure("s13", 3, "s14", 2, self.__rand_link_fail_time()),
+                LinkFailure("s13", 4, "s18", 1, self.__rand_link_fail_time()),
+                LinkFailure("s15", 3, "s20", 1, self.__rand_link_fail_time()),
+                LinkFailure("s19", 3, "s20", 2, self.__rand_link_fail_time()),
+                LinkFailure("s20", 3, "s25", 1, self.__rand_link_fail_time()),
+                LinkFailure("s23", 3, "s24", 2, self.__rand_link_fail_time()),
+            ]
             host_failures = [
                 HostFailure("h1c", pids[0], 300),
                 HostFailure("h2c", pids[1], 450),
@@ -167,3 +174,6 @@ class Experiment(object):
         r = requests.put(self.__URL + "/init")
         if r.status_code != 200:
             error("failed to initialize controller: %d %s", r.status_code, r.text)
+
+    def __rand_link_fail_time(self) -> int:
+        return random.randint(60, 600)
