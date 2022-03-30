@@ -60,12 +60,13 @@ class Experiment(object):
             link_failures = list(map(
                 lambda l: LinkFailure(l["switch1"]["name"], l["switch1"]["port"],
                                       l["switch2"]["name"], l["switch2"]["port"], random.randint(60, 600)),
-                topo.rand_links((len(topo.links()) - len(self.__host_pairs) * 2) // 4),
+                topo.rand_links((len(topo.links()) - len(self.__host_pairs) * 2) // 2),
             ))
-            host_failures = list(map(
-                lambda h: HostFailure(h[0], h[1], random.randint(300, 600)),
-                [["h1c", pids[0]], ["h2c", pids[1]], ["h3c", pids[2]]],
-            ))
+            host_failures = [
+                HostFailure("h1c", pids[0], 300),
+                HostFailure("h2c", pids[1], 450),
+                HostFailure("h3c", pids[2], 600),
+            ]
             self.__register_disaster_info(link_failures, host_failures)
             self.__disaster_scheduler.run([*link_failures, *host_failures])
 
