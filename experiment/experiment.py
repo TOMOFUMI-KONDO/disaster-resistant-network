@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import random
 from time import sleep
 from typing import Optional
 
@@ -29,9 +30,9 @@ class Experiment(object):
         hosts = self.__net.hosts
 
         self.__host_pairs = [
-            {'client': hosts[0], 'server': hosts[1], 'chunk': 10 ** 10 * 2},
-            {'client': hosts[2], 'server': hosts[3], 'chunk': 10 ** 10 * 5},
-            {'client': hosts[4], 'server': hosts[5], 'chunk': 10 ** 11},
+            {'client': hosts[0], 'server': hosts[1], 'chunk': 10 ** 10 * 2},  # 20GB
+            {'client': hosts[2], 'server': hosts[3], 'chunk': 10 ** 10 * 5},  # 50GB
+            {'client': hosts[4], 'server': hosts[5], 'chunk': 10 ** 11},  # 100GB
         ]
 
         self.__disaster_scheduler = DisasterScheduler(
@@ -56,21 +57,20 @@ class Experiment(object):
             # assume that a disaster was predicted
             pids = self.__start_backup()
 
-            link_failures = [
-                LinkFailure("s2", 2, "s3", 1, 100),
-                LinkFailure("s4", 2, "s5", 2, 150),
-                LinkFailure("s6", 3, "s9", 1, 200),
-            ]
-            host_failures = [
-                HostFailure("h1c", pids[0], 300),
-                HostFailure("h2c", pids[1], 350),
-                HostFailure("h3c", pids[2], 400),
-            ]
+            link_failures = list(map(
+                lambda l: LinkFailure(l["switch1"]["name"], l["switch1"]["port"],
+                                      l["switch2"]["name"], l["switch2"]["port"], random.randint(60, 600)),
+                topo.rand_links(len(topo.links()) // 4),
+            ))
+            host_failures = list(map(
+                lambda h: HostFailure(h[0], h[1], random.randint(300, 600)),
+                [["h1c", pids[0]], ["h2c", pids[1]], ["h3c", pids[2]]],
+            ))
             self.__register_disaster_info(link_failures, host_failures)
             self.__disaster_scheduler.run([*link_failures, *host_failures])
 
             # wait until disaster finishes
-            sleep(450)
+            sleep(660)
         finally:
             self.__net.stop()
             self.__init_controller()

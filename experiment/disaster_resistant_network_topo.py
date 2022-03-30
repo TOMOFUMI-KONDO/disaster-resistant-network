@@ -18,6 +18,10 @@ class DisasterResistantNetworkTopo(Topo):
         self.__host_pairs = []
         super(DisasterResistantNetworkTopo, self).__init__(*args, **params)
 
+    # return n links selected randomly
+    def rand_links(self, n: int) -> list[dict]:
+        return random.choices(self.__links, k=n)
+
     def build(self, *args, **params):
         """
         Topology is like below. (size = 3)
