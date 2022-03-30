@@ -60,7 +60,7 @@ class Experiment(object):
             link_failures = list(map(
                 lambda l: LinkFailure(l["switch1"]["name"], l["switch1"]["port"],
                                       l["switch2"]["name"], l["switch2"]["port"], random.randint(60, 600)),
-                topo.rand_links(len(topo.links()) // 4),
+                topo.rand_links((len(topo.links()) - len(self.__host_pairs) * 2) // 4),
             ))
             host_failures = list(map(
                 lambda h: HostFailure(h[0], h[1], random.randint(300, 600)),
